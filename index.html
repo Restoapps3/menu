@@ -311,9 +311,9 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Ambil ID Resto dari URL (Contoh: ?resto=kopi-senja) -> Cukup 1 QR Code untuk semua meja!
+        // Ambil ID Resto dari URL (Contoh: ?resto=nama-resto-anda) -> Cukup 1 QR Code untuk semua meja!
         const urlParams = new URLSearchParams(window.location.search);
-        const restoId = urlParams.get('resto') || 'kopi_senja_senayan';
+        const restoId = urlParams.get('resto') || 'resto_baru';
         
         // Nomor meja dikelola mandiri oleh customer via localStorage / pop-up
         let tableNum = localStorage.getItem('smart_resto_table_' + restoId) || '';
@@ -322,24 +322,16 @@
         let restoConfig = {};
 
         const defaultData = {
-            name: "Kopi Senja Senayan",
+            name: "Nama Restoran Anda",
             logo: "",
             qrisUrl: "",
-            banks: [
-                { bankName: "BCA", accNumber: "1234567890", accName: "PT Kopi Senja Senayan" }
-            ],
-            waiterMappings: [
-                { table: "1", waiterWa: "6281234567891" },
-                { table: "2", waiterWa: "6281234567892" }
-            ],
-            reviewUrl: "https://maps.google.com",
-            waNumber: "6281234567890",
+            banks: [],
+            waiterMappings: [],
+            reviewUrl: "",
+            waNumber: "",
             adminPassword: "admin123",
-            categories: ["Makanan", "Minuman", "Snack"],
-            products: [
-                { name: "Kopi Susu Gula Aren", price: 22000, img: "https://images.unsplash.com/photo-1541167760496-1628856ab772?w=150", desc: "Espresso dengan fresh milk pilihan.", category: "Minuman" },
-                { name: "Nasi Goreng Spesial", price: 30000, img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=150", desc: "Nasi goreng bumbu rempah nusantara.", category: "Makanan" }
-            ]
+            categories: ["Makanan", "Minuman"],
+            products: []
         };
 
         // Sinkronisasi Realtime dengan Firebase Database
@@ -435,7 +427,7 @@
         function renderCategoryFilters() {
             const container = document.getElementById('category-filters');
             if(!container) return;
-            let cats = restoConfig.categories || ["Makanan", "Minuman", "Snack"];
+            let cats = restoConfig.categories || ["Makanan", "Minuman"];
             let html = `<button type="button" onclick="filterCategory('Semua')" class="px-3 py-1.5 rounded-lg ${selectedCategory === 'Semua' ? 'bg-amber-600 text-stone-950 font-bold' : 'bg-stone-800 border border-stone-700 text-stone-300'} whitespace-nowrap">Semua</button>`;
             cats.forEach(cat => {
                 html += `<button type="button" onclick="filterCategory('${cat}')" class="px-3 py-1.5 rounded-lg ${selectedCategory === cat ? 'bg-amber-600 text-stone-950 font-bold' : 'bg-stone-800 border border-stone-700 text-stone-300'} whitespace-nowrap">${cat}</button>`;
