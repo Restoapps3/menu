@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Resto & Digital Menu</title>
+    <!-- Tailwind CSS untuk styling modern -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- Container Utama (Tampilan Vertikal ala HP) -->
+    <div class="w-full max-w-md bg-stone-800 rounded-3xl shadow-2xl overflow-hidden border border-stone-700 p-6 relative">
+        
+        <!-- ================= PAGE 1: MENU UTAMA ================= -->
+        <div id="main-page" class="space-y-6">
+            <!-- Bagian Atas: Logo & Info Restoran -->
+            <div class="text-center">
+                <div class="w-24 h-24 mx-auto bg-stone-700 rounded-full flex items-center justify-center shadow-inner border-2 border-amber-600/50 mb-3 overflow-hidden">
+                    <img id="resto-logo" src="" alt="Logo" class="w-full h-full object-cover hidden">
+                    <i id="default-icon" class="fa-solid fa-utensils text-3xl text-amber-500"></i>
+                </div>
+                <h1 id="resto-name" class="text-2xl font-bold tracking-tight text-white">Memuat Restoran...</h1>
+                <!-- Info Nomor Meja Tamu & Tombol Ubah Meja -->
+                <div class="mt-2 inline-flex items-center gap-2 bg-stone-700/80 px-3 py-1 rounded-full border border-stone-600 text-xs text-stone-300">
+                    <span><i class="fa-solid fa-chair text-amber-400 mr-1"></i> Meja: <strong id="display-table-num" class="text-white">-</strong></span>
+                    <button onclick="openTableModal()" class="text-amber-400 hover:text-amber-300 underline font-semibold ml-1">Ubah</button>
+                </div>
+            </div>
+
+            <!-- Daftar Tombol Interaktif -->
+            <div class="space-y-3.5">
+                <button onclick="openMenuModal()" class="flex items-center justify-between w-full p-4 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold rounded-2xl shadow-lg transition-all transform active:scale-95">
+                    <span class="flex items-center gap-3">
+                        <i class="fa-solid fa-book-open text-xl"></i>
+                        📜 Lihat Menu & Alergi
+                    </span>
+                    <i class="fa-solid fa-chevron-right text-sm"></i>
+                </button>
+
+                <a id="btn-review" href="#" target="_blank" class="flex items-center justify-between w-full p-4 bg-stone-700 hover:bg-stone-600 text-white font-semibold rounded-2xl shadow-md border border-stone-600 transition-all transform active:scale-95">
+                    <span class="flex items-center gap-3 text-amber-400">
+                        <i class="fa-solid fa-star text-xl"></i>
+                        ⭐ Beri Ulasan Google Maps (Bintang 5)
+                    </span>
+                    <i class="fa-solid fa-chevron-right text-sm text-stone-400"></i>
+                </a>
+
+                <button onclick="openPaymentModal()" class="flex items-center justify-between w-full p-4 bg-stone-700 hover:bg-stone-600 text-white font-semibold rounded-2xl shadow-md border border-stone-600 transition-all transform active:scale-95">
+                    <span class="flex items-center gap-3 text-emerald-400">
+                        <i class="fa-solid fa-wallet text-xl"></i>
+                        💳 Metode Pembayaran & QRIS
+                    </span>
+                    <i class="fa-solid fa-qrcode text-sm text-stone-400"></i>
+                </button>
+
+                <button onclick="callWaiter()" class="flex items-center justify-between w-full p-4 bg-stone-700 hover:bg-stone-600 text-white font-semibold rounded-2xl shadow-md border border-stone-600 transition-all transform active:scale-95">
+                    <span class="flex items-center gap-3 text-sky-400">
+                        <i class="fa-solid fa-bell text-xl"></i>
+                        🛎️ Panggil Pelayan
+                    </span>
+                    <i class="fa-solid fa-hand text-sm text-stone-400"></i>
+                </button>
+            </div>
+            
+            <div class="pt-4 border-t border-stone-700 text-center">
+                <button onclick="openAdminPasswordModal()" class="text-xs text-stone-400 hover:text-amber-400 underline">
+                    <i class="fa-solid fa-lock mr-1"></i> Admin Resto (Setup Data & WA Kasir)
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= MODAL INPUT NOMOR MEJA MANDIRI ================= -->
+        <div id="table-modal" class="hidden absolute inset-0 bg-stone-900/95 z-50 p-6 flex flex-col justify-center items-center">
+            <div class="w-full bg-stone-800 p-6 rounded-2xl border border-stone-700 shadow-xl space-y-4">
+                <div class="flex justify-between items-center border-b border-stone-700 pb-2">
+                    <h2 class="text-base font-bold text-amber-400"><i class="fa-solid fa-chair mr-2"></i>Masukkan Nomor Meja</h2>
+                </div>
+                <p class="text-xs text-stone-300">Silakan masukkan nomor meja tempat Anda duduk saat ini:</p>
+                <input type="text" id="input-customer-table" class="w-full p-3 rounded-xl bg-stone-700 border border-stone-600 text-white text-center font-bold text-lg" placeholder="Contoh: 01 / VIP-2">
+                <button onclick="saveCustomerTable()" class="w-full py-3 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold rounded-xl shadow text-sm">
+                    Simpan & Mulai Pesan
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= MODAL METODE PEMBAYARAN & QRIS ================= -->
+        <div id="payment-modal" class="hidden absolute inset-0 bg-stone-900/95 z-50 p-6 flex flex-col justify-between overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-stone-700 pb-3">
+                <h2 class="text-lg font-bold text-amber-400"><i class="fa-solid fa-wallet mr-2"></i>Metode Pembayaran</h2>
+                <button onclick="closePaymentModal()" class="text-stone-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="space-y-4 my-auto text-center py-2">
+                <p class="text-xs text-stone-300">Silakan lakukan pembayaran melalui QRIS atau transfer bank di bawah ini:</p>
+                <div class="w-40 h-40 mx-auto bg-stone-700 rounded-2xl overflow-hidden shadow-inner border border-stone-600 flex items-center justify-center p-2">
+                    <img id="payment-qris-img" src="https://via.placeholder.com/180?text=QRIS+Resto" alt="QRIS Pembayaran" class="w-full h-full object-contain">
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-white mb-0.5">QRIS All Payment</h3>
+                    <p class="text-amber-400 text-[11px]">Scan pakai BCA, Mandiri, OVO, Gopay, Dana, dll.</p>
+                </div>
+
+                <div class="pt-2 border-t border-stone-700 text-left">
+                    <h4 class="text-xs font-bold text-amber-400 mb-1.5"><i class="fa-solid fa-building-columns mr-1"></i> Transfer Nomor Rekening Bank:</h4>
+                    <div id="payment-bank-list" class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 text-xs space-y-1 text-stone-300">
+                        <!-- Dinamis -->
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button onclick="sendProofToWhatsApp()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2 text-xs">
+                        <i class="fa-brands fa-whatsapp text-lg"></i> Kirim Bukti Transfer / Bayar ke WA Kasir
+                    </button>
+                    <p class="text-[10px] text-stone-400 mt-1">Lampirkan foto/screenshot bukti transfer Anda pada chat WhatsApp yang terbuka.</p>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-stone-700">
+                <button onclick="closePaymentModal()" class="w-full py-2.5 bg-stone-700 hover:bg-stone-600 text-white font-semibold rounded-xl shadow text-xs">
+                    Tutup
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= MODAL KATALOG MENU ================= -->
+        <div id="menu-modal" class="hidden absolute inset-0 bg-stone-900 z-50 p-6 flex flex-col overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 border-b border-stone-700 pb-3">
+                <h2 class="text-lg font-bold text-amber-400"><i class="fa-solid fa-utensils mr-2"></i>Daftar Menu Restoran</h2>
+                <button onclick="closeMenuModal()" class="text-stone-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="space-y-3 mb-4">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-stone-400">
+                        <i class="fa-solid fa-search text-xs"></i>
+                    </span>
+                    <input type="text" id="customer-search-input" oninput="renderProductList()" class="w-full pl-9 pr-3 py-2 rounded-xl bg-stone-800 border border-stone-700 text-white text-xs" placeholder="Cari menu makanan atau minuman...">
+                </div>
+                <div id="category-filters" class="flex gap-2 overflow-x-auto pb-1 text-xs"></div>
+            </div>
+
+            <div id="product-list" class="space-y-3 flex-1 mb-4"></div>
+
+            <div class="sticky bottom-0 bg-stone-800 pt-2 pb-1 border-t border-stone-700">
+                <button onclick="sendToWhatsApp()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-xl"></i> Pesan via WhatsApp Pelayan
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= MODAL DETAIL PRODUK ================= -->
+        <div id="product-detail-modal" class="hidden absolute inset-0 bg-stone-900/95 z-50 p-6 flex flex-col justify-between overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-stone-700 pb-3">
+                <h2 class="text-lg font-bold text-amber-400"><i class="fa-solid fa-circle-info mr-2"></i>Detail Produk</h2>
+                <button onclick="closeProductDetail()" class="text-stone-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="space-y-4 my-auto text-center">
+                <div class="w-full h-56 bg-stone-700 rounded-2xl overflow-hidden shadow-inner border border-stone-600">
+                    <img id="detail-img" src="" alt="Foto Produk" class="w-full h-full object-cover">
+                </div>
+                <div>
+                    <h3 id="detail-name" class="text-xl font-bold text-white mb-1"></h3>
+                    <p id="detail-price" class="text-amber-400 text-lg font-bold mb-2"></p>
+                    <p id="detail-desc" class="text-stone-300 text-xs px-2 leading-relaxed"></p>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-stone-700">
+                <button onclick="closeProductDetail()" class="w-full py-2.5 bg-stone-700 hover:bg-stone-600 text-white font-semibold rounded-xl shadow">
+                    Kembali ke Menu
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= MODAL PASSWORD ADMIN ================= -->
+        <div id="admin-password-modal" class="hidden absolute inset-0 bg-stone-900/95 z-50 p-6 flex flex-col justify-center items-center">
+            <div class="w-full bg-stone-800 p-6 rounded-2xl border border-stone-700 shadow-xl space-y-4">
+                <div class="flex justify-between items-center border-b border-stone-700 pb-2">
+                    <h2 class="text-base font-bold text-amber-400"><i class="fa-solid fa-lock mr-2"></i>Verifikasi Admin</h2>
+                    <button onclick="closeAdminPasswordModal()" class="text-stone-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <p class="text-xs text-stone-300">Masukkan password untuk mengakses Panel Admin.</p>
+                <input type="password" id="input-admin-password" class="w-full p-2.5 rounded-lg bg-stone-700 border border-stone-600 text-white text-sm" placeholder="Password admin">
+                <button onclick="verifyAdminPassword()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold rounded-xl shadow text-sm">
+                    Masuk
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= MODAL PANEL ADMIN ================= -->
+        <div id="admin-modal" class="hidden absolute inset-0 bg-stone-900 z-50 p-6 flex flex-col overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 border-b border-stone-700 pb-3">
+                <h2 class="text-lg font-bold text-amber-400"><i class="fa-solid fa-gear mr-2"></i>Panel Admin Resto</h2>
+                <button onclick="closeAdminModal()" class="text-stone-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="space-y-4 text-left text-sm flex-1">
+                <div>
+                    <label class="block text-stone-300 font-medium mb-1">ID Restoran (URL Unique)</label>
+                    <input type="text" id="input-resto-id" disabled class="w-full p-2.5 rounded-lg bg-stone-900 border border-stone-700 text-stone-400 text-xs" />
+                </div>
+                <div>
+                    <label class="block text-stone-300 font-medium mb-1">Nama Restoran</label>
+                    <input type="text" id="input-name" class="w-full p-2.5 rounded-lg bg-stone-700 border border-stone-600 text-white">
+                </div>
+                <div>
+                    <label class="block text-stone-300 font-medium mb-1">Logo Restoran (Link URL atau Galeri)</label>
+                    <div class="flex gap-2 items-center">
+                        <input type="text" id="input-logo" class="w-full p-2.5 rounded-lg bg-stone-700 border border-stone-600 text-white">
+                        <label class="bg-amber-600 hover:bg-amber-700 text-stone-950 px-3 py-2.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap">
+                            <i class="fa-solid fa-image mr-1"></i> Galeri
+                            <input type="file" accept="image/*" class="hidden" onchange="handleLogoUpload(event)">
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-stone-300 font-medium mb-1">Link QRIS / Gambar Pembayaran</label>
+                    <div class="flex gap-2 items-center">
+                        <input type="text" id="input-qris" class="w-full p-2.5 rounded-lg bg-stone-700 border border-stone-600 text-white">
+                        <label class="bg-amber-600 hover:bg-amber-700 text-stone-950 px-3 py-2.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap">
+                            <i class="fa-solid fa-image mr-1"></i> Galeri
+                            <input type="file" accept="image/*" class="hidden" onchange="handleQrisUpload(event)">
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="font-bold text-amber-400 mb-2">Kelola Nomor Rekening Bank</h3>
+                    <div id="admin-bank-inputs" class="space-y-2 mb-2"></div>
+                    <button type="button" onclick="addBankInput()" class="text-xs text-amber-400 hover:underline"><i class="fa-solid fa-plus"></i> Tambah Rekening Bank</button>
+                </div>
+
+                <div>
+                    <label class="block text-stone-300 font-medium mb-1">Link Google Maps Review (Bintang 5)</label>
+                    <input type="text" id="input-review" class="w-full p-2.5 rounded-lg bg-stone-700 border border-stone-600 text-white">
+                </div>
+                <div>
+                    <label class="block text-stone-300 font-medium mb-1">Nomor WhatsApp Kasir (Awali 62)</label>
+                    <input type="text" id="input-wa" class="w-full p-2.5 rounded-lg bg-stone-700 border border-stone-600 text-white">
+                </div>
+                
+                <!-- Mapping Nomor Meja ke Pelayan -->
+                <hr class="border-stone-700 my-2">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-amber-400">Mapping Nomor Meja ke Pelayan (WhatsApp)</h3>
+                        <span class="text-[10px] text-stone-400">Atur nomor pelayan per meja</span>
+                    </div>
+                    <div id="admin-waiter-mapping-inputs" class="space-y-2 mb-2"></div>
+                    <button type="button" onclick="addWaiterMappingInput()" class="text-xs text-amber-400 hover:underline"><i class="fa-solid fa-plus"></i> Tambah Mapping Meja & Pelayan</button>
+                </div>
+
+                <div>
+                    <label class="block text-stone-300 font-medium mb-1">Ubah Password Admin</label>
+                    <input type="text" id="input-new-password" class="w-full p-2.5 rounded-lg bg-stone-700 border border-stone-600 text-white" placeholder="Kosongkan jika tidak diubah">
+                </div>
+
+                <hr class="border-stone-700 my-2">
+                <div>
+                    <h3 class="font-bold text-amber-400 mb-2">Kelola Kategori Menu</h3>
+                    <div id="admin-category-inputs" class="space-y-2 mb-2"></div>
+                    <button type="button" onclick="addCategoryInput()" class="text-xs text-amber-400 hover:underline"><i class="fa-solid fa-plus"></i> Tambah Kategori Baru</button>
+                </div>
+
+                <hr class="border-stone-700 my-2">
+                <h3 class="font-bold text-amber-400">Kelola Menu & Harga</h3>
+                <div>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-stone-400">
+                            <i class="fa-solid fa-search"></i>
+                        </span>
+                        <input type="text" id="admin-search-input" oninput="renderAdminProducts()" class="w-full pl-9 pr-3 py-2 rounded-lg bg-stone-700 border border-stone-600 text-white text-xs" placeholder="Cari nama menu...">
+                    </div>
+                </div>
+                <div id="admin-product-inputs" class="space-y-2"></div>
+                <button type="button" onclick="addProductInput()" class="text-xs text-amber-400 hover:underline"><i class="fa-solid fa-plus"></i> Tambah Kolom Menu Baru</button>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-stone-700">
+                <button onclick="saveAdminDataToFirebase()" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold rounded-xl shadow">
+                    Simpan ke Firebase (Realtime)
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-6 pt-3 border-t border-stone-700/50 text-[11px] text-stone-500 text-center">
+            Smart Resto Phygital System - Powered by Firebase
+        </div>
+    </div>
+
+    <!-- Firebase Script SDK & Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAKbysCa5tOgnN4r99YKBkAmCLwzOgN4Q",
+            authDomain: "toko-sin.firebaseapp.com",
+            databaseURL: "https://toko-sin-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "toko-sin",
+            storageBucket: "toko-sin.firebasestorage.app",
+            messagingSenderId: "730575620129",
+            appId: "1:730575620129:web:7c24c9ab901f89adf57b60",
+            measurementId: "G-XX9JNDMPCM"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Ambil ID Resto dari URL (Contoh: ?resto=kopi-senja) -> Cukup 1 QR Code untuk semua meja!
+        const urlParams = new URLSearchParams(window.location.search);
+        const restoId = urlParams.get('resto') || 'kopi_senja_senayan';
+        
+        // Nomor meja dikelola mandiri oleh customer via localStorage / pop-up
+        let tableNum = localStorage.getItem('smart_resto_table_' + restoId) || '';
+        let selectedCategory = 'Semua';
+        let cart = {};
+        let restoConfig = {};
+
+        const defaultData = {
+            name: "Kopi Senja Senayan",
+            logo: "",
+            qrisUrl: "",
+            banks: [
+                { bankName: "BCA", accNumber: "1234567890", accName: "PT Kopi Senja Senayan" }
+            ],
+            waiterMappings: [
+                { table: "1", waiterWa: "6281234567891" },
+                { table: "2", waiterWa: "6281234567892" }
+            ],
+            reviewUrl: "https://maps.google.com",
+            waNumber: "6281234567890",
+            adminPassword: "admin123",
+            categories: ["Makanan", "Minuman", "Snack"],
+            products: [
+                { name: "Kopi Susu Gula Aren", price: 22000, img: "https://images.unsplash.com/photo-1541167760496-1628856ab772?w=150", desc: "Espresso dengan fresh milk pilihan.", category: "Minuman" },
+                { name: "Nasi Goreng Spesial", price: 30000, img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=150", desc: "Nasi goreng bumbu rempah nusantara.", category: "Makanan" }
+            ]
+        };
+
+        // Sinkronisasi Realtime dengan Firebase Database
+        const restoRef = ref(db, 'restaurants/' + restoId);
+        
+        onValue(restoRef, (snapshot) => {
+            if (snapshot.exists()) {
+                restoConfig = snapshot.val();
+            } else {
+                restoConfig = defaultData;
+                set(restoRef, defaultData);
+            }
+            loadConfigToUI();
+            
+            // Jika nomor meja belum diisi oleh customer saat pertama buka, tampilkan modal input meja
+            if (!tableNum) {
+                openTableModal();
+            } else {
+                document.getElementById('display-table-num').innerText = tableNum;
+            }
+        });
+
+        // Fungsi penentu nomor WhatsApp pelayan berdasarkan meja secara dinamis
+        function getTargetWaiterWa() {
+            if (restoConfig.waiterMappings && Array.isArray(restoConfig.waiterMappings)) {
+                let found = restoConfig.waiterMappings.find(m => String(m.table).trim() === String(tableNum).trim());
+                if (found && found.waiterWa) {
+                    return found.waiterWa;
+                }
+            }
+            return restoConfig.waNumber;
+        }
+
+        window.openTableModal = function() {
+            document.getElementById('input-customer-table').value = tableNum;
+            document.getElementById('table-modal').classList.remove('hidden');
+        }
+
+        window.saveCustomerTable = function() {
+            let val = document.getElementById('input-customer-table').value.trim();
+            if (!val) {
+                alert("Silakan masukkan nomor meja Anda terlebih dahulu!");
+                return;
+            }
+            tableNum = val;
+            localStorage.setItem('smart_resto_table_' + restoId, tableNum);
+            document.getElementById('display-table-num').innerText = tableNum;
+            document.getElementById('table-modal').classList.add('hidden');
+        }
+
+        window.loadConfigToUI = function() {
+            document.getElementById('resto-name').innerText = restoConfig.name || "Restoran";
+            document.getElementById('btn-review').setAttribute('href', restoConfig.reviewUrl || '#');
+            
+            if(restoConfig.logo) {
+                document.getElementById('resto-logo').src = restoConfig.logo;
+                document.getElementById('resto-logo').classList.remove('hidden');
+                document.getElementById('default-icon').classList.add('hidden');
+            } else {
+                document.getElementById('resto-logo').classList.add('hidden');
+                document.getElementById('default-icon').classList.remove('hidden');
+            }
+
+            if(restoConfig.qrisUrl) {
+                document.getElementById('payment-qris-img').src = restoConfig.qrisUrl;
+            }
+
+            renderPaymentBanks();
+            renderCategoryFilters();
+            renderProductList();
+        }
+
+        function renderPaymentBanks() {
+            const container = document.getElementById('payment-bank-list');
+            if(!container) return;
+            container.innerHTML = '';
+            if(!restoConfig.banks || restoConfig.banks.length === 0) {
+                container.innerHTML = `<p class="text-stone-400 italic">Belum ada informasi rekening bank.</p>`;
+                return;
+            }
+            restoConfig.banks.forEach(b => {
+                container.innerHTML += `
+                    <div class="flex justify-between items-center py-1 border-b border-stone-700/50">
+                        <div>
+                            <span class="font-bold text-white">${b.bankName}</span>: <span class="text-amber-400 font-mono">${b.accNumber}</span>
+                            <div class="text-[10px] text-stone-400">a.n. ${b.accName}</div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderCategoryFilters() {
+            const container = document.getElementById('category-filters');
+            if(!container) return;
+            let cats = restoConfig.categories || ["Makanan", "Minuman", "Snack"];
+            let html = `<button type="button" onclick="filterCategory('Semua')" class="px-3 py-1.5 rounded-lg ${selectedCategory === 'Semua' ? 'bg-amber-600 text-stone-950 font-bold' : 'bg-stone-800 border border-stone-700 text-stone-300'} whitespace-nowrap">Semua</button>`;
+            cats.forEach(cat => {
+                html += `<button type="button" onclick="filterCategory('${cat}')" class="px-3 py-1.5 rounded-lg ${selectedCategory === cat ? 'bg-amber-600 text-stone-950 font-bold' : 'bg-stone-800 border border-stone-700 text-stone-300'} whitespace-nowrap">${cat}</button>`;
+            });
+            container.innerHTML = html;
+        }
+
+        window.filterCategory = function(category) {
+            selectedCategory = category;
+            renderCategoryFilters();
+            renderProductList();
+        }
+
+        function renderProductList() {
+            const container = document.getElementById('product-list');
+            if(!container) return;
+            container.innerHTML = '';
+            const keyword = document.getElementById('customer-search-input').value.toLowerCase().trim();
+            let products = restoConfig.products || [];
+            let hasVisible = false;
+
+            products.forEach((p, index) => {
+                let cat = p.category || (restoConfig.categories ? restoConfig.categories[0] : 'Makanan');
+                if ((selectedCategory !== 'Semua' && cat.toLowerCase() !== selectedCategory.toLowerCase())) return;
+                if (keyword && !p.name.toLowerCase().includes(keyword)) return;
+
+                hasVisible = true;
+                let currentQty = cart[index] || 0;
+                container.innerHTML += `
+                    <div class="flex items-center justify-between bg-stone-700/60 p-2.5 rounded-xl border border-stone-600">
+                        <div class="flex items-center gap-3 cursor-pointer flex-1" onclick="openProductDetail(${index})">
+                            <img src="${p.img || 'https://via.placeholder.com/60'}" class="w-12 h-12 rounded-lg object-cover">
+                            <div class="text-left overflow-hidden pr-2">
+                                <h4 class="font-semibold text-white text-sm truncate">${p.name}</h4>
+                                <span class="inline-block text-[10px] bg-stone-800 text-amber-400 px-1.5 py-0.5 rounded">${cat}</span>
+                                <p class="text-amber-400 text-xs font-bold">Rp ${Number(p.price).toLocaleString('id-ID')}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="changeQty(${index}, -1)" class="w-7 h-7 bg-stone-600 rounded-lg text-white font-bold">-</button>
+                            <span id="qty-${index}" class="text-sm font-bold w-4 text-center">${currentQty}</span>
+                            <button type="button" onclick="changeQty(${index}, 1)" class="w-7 h-7 bg-amber-600 rounded-lg text-stone-950 font-bold">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+            if(!hasVisible) container.innerHTML = `<div class="text-center py-8 text-stone-400 text-xs">Menu tidak ditemukan.</div>`;
+        }
+
+        window.changeQty = function(index, delta) {
+            cart[index] = (cart[index] || 0) + delta;
+            if(cart[index] < 0) cart[index] = 0;
+            document.getElementById(`qty-${index}`).innerText = cart[index];
+        }
+
+        window.sendToWhatsApp = function() {
+            let message = `Halo Pelayan, saya ingin memesan dari *Meja #${tableNum}*:\n\n`;
+            let total = 0, hasItem = false;
+            for(let index in cart) {
+                if(cart[index] > 0) {
+                    hasItem = true;
+                    let p = restoConfig.products[index];
+                    let sub = p.price * cart[index];
+                    total += sub;
+                    message += `- ${p.name} (${cart[index]}x) = Rp ${sub.toLocaleString('id-ID')}\n`;
+                }
+            }
+            if(!hasItem) { alert("Pilih minimal 1 menu!"); return; }
+            message += `\n*Total: Rp ${total.toLocaleString('id-ID')}*\nMohon diproses, terima kasih!`;
+            let targetWa = getTargetWaiterWa();
+            window.open(`https://wa.me/${targetWa}?text=` + encodeURIComponent(message), '_blank');
+        }
+
+        window.sendProofToWhatsApp = function() {
+            let total = 0, summary = "";
+            for(let index in cart) {
+                if(cart[index] > 0) {
+                    let p = restoConfig.products[index];
+                    let sub = p.price * cart[index];
+                    total += sub;
+                    summary += `- ${p.name} (${cart[index]}x)\n`;
+                }
+            }
+            let msg = `Halo Kak, berikut Bukti Transfer pembayaran dari *Meja #${tableNum}*:\n\n${summary}\n*Total: Rp ${total.toLocaleString('id-ID')}*\n*(Silakan lampirkan foto screenshot bukti transfer)*`;
+            window.open(`https://wa.me/${restoConfig.waNumber}?text=` + encodeURIComponent(msg), '_blank');
+        }
+
+        window.callWaiter = function() {
+            let msg = `Halo Pelayan, mohon segera ke *Meja #${tableNum}*. Tamu memerlukan bantuan.`;
+            let targetWa = getTargetWaiterWa();
+            window.open(`https://wa.me/${targetWa}?text=` + encodeURIComponent(msg), '_blank');
+        }
+
+        // Global UI Controls
+        window.openPaymentModal = () => document.getElementById('payment-modal').classList.remove('hidden');
+        window.closePaymentModal = () => document.getElementById('payment-modal').classList.add('hidden');
+        window.openMenuModal = () => { document.getElementById('customer-search-input').value = ''; filterCategory('Semua'); document.getElementById('menu-modal').classList.remove('hidden'); }
+        window.closeMenuModal = () => document.getElementById('menu-modal').classList.add('hidden');
+        window.openProductDetail = (i) => {
+            let p = restoConfig.products[i];
+            document.getElementById('detail-img').src = p.img || '';
+            document.getElementById('detail-name').innerText = p.name;
+            document.getElementById('detail-price').innerText = `Rp ${Number(p.price).toLocaleString('id-ID')}`;
+            document.getElementById('detail-desc').innerText = p.desc || "Menu spesial pilihan.";
+            document.getElementById('product-detail-modal').classList.remove('hidden');
+        }
+        window.closeProductDetail = () => document.getElementById('product-detail-modal').classList.add('hidden');
+        window.openAdminPasswordModal = () => { document.getElementById('input-admin-password').value = ''; document.getElementById('admin-password-modal').classList.remove('hidden'); }
+        window.closeAdminPasswordModal = () => document.getElementById('admin-password-modal').classList.add('hidden');
+        
+        window.verifyAdminPassword = () => {
+            if (document.getElementById('input-admin-password').value === (restoConfig.adminPassword || "admin123")) {
+                closeAdminPasswordModal();
+                openAdminModal();
+            } else { alert("Password Salah!"); }
+        }
+
+        window.openAdminModal = () => {
+            document.getElementById('input-resto-id').value = restoId;
+            document.getElementById('input-name').value = restoConfig.name;
+            document.getElementById('input-logo').value = restoConfig.logo || '';
+            document.getElementById('input-qris').value = restoConfig.qrisUrl || '';
+            document.getElementById('input-review').value = restoConfig.reviewUrl || '';
+            document.getElementById('input-wa').value = restoConfig.waNumber || '';
+            renderAdminBanks();
+            renderAdminWaiterMappings();
+            renderAdminCategories();
+            renderAdminProducts();
+            document.getElementById('admin-modal').classList.remove('hidden');
+        }
+        window.closeAdminModal = () => document.getElementById('admin-modal').classList.add('hidden');
+
+        function renderAdminBanks() {
+            const container = document.getElementById('admin-bank-inputs');
+            container.innerHTML = '';
+            (restoConfig.banks || []).forEach((b, i) => {
+                container.innerHTML += `
+                    <div class="flex flex-col gap-1 bg-stone-800 p-2 rounded border border-stone-700" id="bank-row-${i}">
+                        <div class="flex gap-2">
+                            <input type="text" value="${b.bankName}" placeholder="Bank" class="p-1.5 bg-stone-700 rounded w-1/3 text-xs text-white" id="adm-bank-name-${i}">
+                            <input type="text" value="${b.accNumber}" placeholder="No Rek" class="p-1.5 bg-stone-700 rounded flex-1 text-xs text-white" id="adm-bank-acc-${i}">
+                            <button type="button" onclick="removeBank(${i})" class="text-red-400"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                        <input type="text" value="${b.accName}" placeholder="Atas Nama" class="p-1.5 bg-stone-700 rounded text-xs text-white" id="adm-bank-holder-${i}">
+                    </div>
+                `;
+            });
+        }
+        window.addBankInput = () => { syncDOMToConfig(); restoConfig.banks.push({bankName:"", accNumber:"", accName:""}); renderAdminBanks(); }
+        window.removeBank = (i) => { syncDOMToConfig(); restoConfig.banks.splice(i,1); renderAdminBanks(); }
+
+        // Fungsi pengelolaan input mapping meja ke pelayan di panel admin
+        function renderAdminWaiterMappings() {
+            const container = document.getElementById('admin-waiter-mapping-inputs');
+            if(!container) return;
+            container.innerHTML = '';
+            (restoConfig.waiterMappings || []).forEach((m, i) => {
+                container.innerHTML += `
+                    <div class="flex gap-2 items-center bg-stone-800 p-2 rounded border border-stone-700" id="waiter-map-row-${i}">
+                        <input type="text" value="${m.table || ''}" placeholder="No Meja" class="p-1.5 bg-stone-700 rounded w-1/4 text-xs text-white" id="adm-map-table-${i}">
+                        <input type="text" value="${m.waiterWa || ''}" placeholder="WA Pelayan (62...)" class="p-1.5 bg-stone-700 rounded flex-1 text-xs text-white" id="adm-map-wa-${i}">
+                        <button type="button" onclick="removeWaiterMapping(${i})" class="text-red-400"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+            });
+        }
+        window.addWaiterMappingInput = () => { syncDOMToConfig(); if(!restoConfig.waiterMappings) restoConfig.waiterMappings = []; restoConfig.waiterMappings.push({table: "", waiterWa: ""}); renderAdminWaiterMappings(); }
+        window.removeWaiterMapping = (i) => { syncDOMToConfig(); restoConfig.waiterMappings.splice(i,1); renderAdminWaiterMappings(); }
+
+        function renderAdminCategories() {
+            const container = document.getElementById('admin-category-inputs');
+            container.innerHTML = '';
+            (restoConfig.categories || []).forEach((cat, i) => {
+                container.innerHTML += `
+                    <div class="flex gap-2 items-center">
+                        <input type="text" value="${cat}" class="p-1.5 bg-stone-700 rounded flex-1 text-xs text-white" id="adm-cat-${i}">
+                        <button type="button" onclick="removeCategory(${i})" class="text-red-400"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+            });
+        }
+        window.addCategoryInput = () => { syncDOMToConfig(); restoConfig.categories.push("Kategori Baru"); renderAdminCategories(); }
+        window.removeCategory = (i) => { syncDOMToConfig(); restoConfig.categories.splice(i,1); renderAdminCategories(); }
+
+        window.renderAdminProducts = function() {
+            const container = document.getElementById('admin-product-inputs');
+            container.innerHTML = '';
+            const keyword = document.getElementById('admin-search-input').value.toLowerCase();
+            (restoConfig.products || []).forEach((p, i) => {
+                if(keyword && !p.name.toLowerCase().includes(keyword)) return;
+                let opts = '';
+                (restoConfig.categories || []).forEach(c => { opts += `<option value="${c}" ${p.category === c ? 'selected' : ''}>${c}</option>`; });
+                container.innerHTML += `
+                    <div class="flex flex-col gap-2 bg-stone-800 p-2.5 rounded border border-stone-700">
+                        <div class="flex gap-2">
+                            <input type="text" value="${p.name}" placeholder="Nama Menu" class="p-1.5 bg-stone-700 rounded w-1/2 text-xs text-white" id="adm-prod-name-${i}">
+                            <input type="number" value="${p.price}" placeholder="Harga" class="p-1.5 bg-stone-700 rounded w-1/3 text-xs text-white" id="adm-prod-price-${i}">
+                            <button type="button" onclick="removeProduct(${i})" class="text-red-400 ml-auto"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" value="${p.img || ''}" placeholder="URL Gambar" class="p-1.5 bg-stone-700 rounded flex-1 text-xs text-white" id="adm-prod-img-${i}">
+                            <select id="adm-prod-cat-${i}" class="p-1.5 bg-stone-700 rounded text-xs text-white">${opts}</select>
+                        </div>
+                        <input type="text" value="${p.desc || ''}" placeholder="Deskripsi Singkat" class="p-1.5 bg-stone-700 rounded text-xs text-white" id="adm-prod-desc-${i}">
+                    </div>
+                `;
+            });
+        }
+        window.addProductInput = () => { syncDOMToConfig(); restoConfig.products.push({name:"", price:0, img:"", desc:"", category:restoConfig.categories[0]}); renderAdminProducts(); }
+        window.removeProduct = (i) => { syncDOMToConfig(); restoConfig.products.splice(i,1); renderAdminProducts(); }
+
+        window.handleLogoUpload = (e) => {
+            const f = e.target.files[0];
+            if(f) { const r = new FileReader(); r.onload = (ev) => document.getElementById('input-logo').value = ev.target.result; r.readAsDataURL(f); }
+        }
+        window.handleQrisUpload = (e) => {
+            const f = e.target.files[0];
+            if(f) { const r = new FileReader(); r.onload = (ev) => document.getElementById('input-qris').value = ev.target.result; r.readAsDataURL(f); }
+        }
+
+        function syncDOMToConfig() {
+            let newBanks = [];
+            (restoConfig.banks || []).forEach((_, i) => {
+                let n = document.getElementById(`adm-bank-name-${i}`);
+                let acc = document.getElementById(`adm-bank-acc-${i}`);
+                let h = document.getElementById(`adm-bank-holder-${i}`);
+                if(n && n.value.trim() !== "") newBanks.push({bankName: n.value, accNumber: acc.value, accName: h ? h.value : ""});
+            });
+            restoConfig.banks = newBanks;
+
+            let newMappings = [];
+            let mapContainer = document.getElementById('admin-waiter-mapping-inputs');
+            if (mapContainer) {
+                let rows = mapContainer.querySelectorAll('div[id^="waiter-map-row-"]');
+                rows.forEach((_, i) => {
+                    let t = document.getElementById(`adm-map-table-${i}`);
+                    let w = document.getElementById(`adm-map-wa-${i}`);
+                    if(t && t.value.trim() !== "") {
+                        newMappings.push({ table: t.value.trim(), waiterWa: w ? w.value.trim() : "" });
+                    }
+                });
+            }
+            restoConfig.waiterMappings = newMappings;
+
+            let newCats = [];
+            (restoConfig.categories || []).forEach((_, i) => {
+                let c = document.getElementById(`adm-cat-${i}`);
+                if(c && c.value.trim() !== "") newCats.push(c.value);
+            });
+            if(newCats.length > 0) restoConfig.categories = newCats;
+
+            restoConfig.products = (restoConfig.products || []).map((p, i) => {
+                let name = document.getElementById(`adm-prod-name-${i}`);
+                let price = document.getElementById(`adm-prod-price-${i}`);
+                let img = document.getElementById(`adm-prod-img-${i}`);
+                let desc = document.getElementById(`adm-prod-desc-${i}`);
+                let cat = document.getElementById(`adm-prod-cat-${i}`);
+                return {
+                    name: name ? name.value : p.name,
+                    price: price ? Number(price.value) : p.price,
+                    img: img ? img.value : p.img,
+                    desc: desc ? desc.value : p.desc,
+                    category: cat ? cat.value : p.category
+                };
+            });
+        }
+
+        window.saveAdminDataToFirebase = function() {
+            restoConfig.name = document.getElementById('input-name').value;
+            restoConfig.logo = document.getElementById('input-logo').value;
+            restoConfig.qrisUrl = document.getElementById('input-qris').value;
+            restoConfig.reviewUrl = document.getElementById('input-review').value;
+            restoConfig.waNumber = document.getElementById('input-wa').value;
+
+            let newPass = document.getElementById('input-new-password').value.trim();
+            if(newPass !== "") restoConfig.adminPassword = newPass;
+
+            syncDOMToConfig();
+
+            set(restoRef, restoConfig).then(() => {
+                alert("Data berhasil disimpan & disinkronkan secara Realtime ke Firebase!");
+                closeAdminModal();
+            }).catch((err) => {
+                alert("Gagal menyimpan: " + err.message);
+            });
+        }
+    </script>
+</body>
+</html>
