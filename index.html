@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Menu</title>
+    <title>Smart Resto & Digital Menu</title>
     <!-- Tailwind CSS untuk styling modern -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome untuk ikon -->
@@ -35,7 +35,7 @@
                 <button onclick="openMenuModal()" class="flex items-center justify-between w-full p-4 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold rounded-2xl shadow-lg transition-all transform active:scale-95">
                     <span class="flex items-center gap-3">
                         <i class="fa-solid fa-book-open text-xl"></i>
-                        Lihat Menu
+                        📜 Lihat Menu & Alergi
                     </span>
                     <i class="fa-solid fa-chevron-right text-sm"></i>
                 </button>
@@ -43,7 +43,7 @@
                 <a id="btn-review" href="#" target="_blank" class="flex items-center justify-between w-full p-4 bg-stone-700 hover:bg-stone-600 text-white font-semibold rounded-2xl shadow-md border border-stone-600 transition-all transform active:scale-95">
                     <span class="flex items-center gap-3 text-amber-400">
                         <i class="fa-solid fa-star text-xl"></i>
-                        Beri Ulasan (Bintang 5)
+                        ⭐ Beri Ulasan Google Maps (Bintang 5)
                     </span>
                     <i class="fa-solid fa-chevron-right text-sm text-stone-400"></i>
                 </a>
@@ -51,7 +51,7 @@
                 <button onclick="openPaymentModal()" class="flex items-center justify-between w-full p-4 bg-stone-700 hover:bg-stone-600 text-white font-semibold rounded-2xl shadow-md border border-stone-600 transition-all transform active:scale-95">
                     <span class="flex items-center gap-3 text-emerald-400">
                         <i class="fa-solid fa-wallet text-xl"></i>
-                        Metode Pembayaran & QRIS
+                        💳 Metode Pembayaran & QRIS
                     </span>
                     <i class="fa-solid fa-qrcode text-sm text-stone-400"></i>
                 </button>
@@ -59,7 +59,7 @@
                 <button onclick="callWaiter()" class="flex items-center justify-between w-full p-4 bg-stone-700 hover:bg-stone-600 text-white font-semibold rounded-2xl shadow-md border border-stone-600 transition-all transform active:scale-95">
                     <span class="flex items-center gap-3 text-sky-400">
                         <i class="fa-solid fa-bell text-xl"></i>
-                        Panggil Pelayan
+                        🛎️ Panggil Pelayan
                     </span>
                     <i class="fa-solid fa-hand text-sm text-stone-400"></i>
                 </button>
@@ -67,7 +67,7 @@
             
             <div class="pt-4 border-t border-stone-700 text-center">
                 <button onclick="openAdminPasswordModal()" class="text-xs text-stone-400 hover:text-amber-400 underline">
-                    <i class="fa-solid fa-lock mr-1"></i> Admin Resto 
+                    <i class="fa-solid fa-lock mr-1"></i> Admin Resto (Setup Data & WA Kasir)
                 </button>
             </div>
         </div>
@@ -199,18 +199,6 @@
             </div>
 
             <div class="space-y-4 text-left text-sm flex-1">
-                <!-- FITUR TAMBAHAN: Salin/Impor Data dari Resto Lain -->
-                <div class="bg-stone-800 p-3 rounded-xl border border-amber-600/40 space-y-2">
-                    <label class="block text-amber-400 font-bold text-xs"><i class="fa-solid fa-copy mr-1"></i> Salin Data dari Restoran Lain</label>
-                    <p class="text-[11px] text-stone-300">Masukkan ID Resto sumber untuk menyalin semua menu, kategori, dan pengaturan ke sistem ini secara instan:</p>
-                    <div class="flex gap-2">
-                        <input type="text" id="input-source-resto-id" placeholder="Contoh: resto_sumber_utama" class="p-2 bg-stone-700 rounded-lg flex-1 text-xs text-white border border-stone-600">
-                        <button type="button" onclick="copyDataFromAnotherResto()" class="bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold px-3 py-2 rounded-lg text-xs whitespace-nowrap">
-                            <i class="fa-solid fa-download mr-1"></i> Salin Data
-                        </button>
-                    </div>
-                </div>
-
                 <div>
                     <label class="block text-stone-300 font-medium mb-1">ID Restoran (URL Unique)</label>
                     <input type="text" id="input-resto-id" disabled class="w-full p-2.5 rounded-lg bg-stone-900 border border-stone-700 text-stone-400 text-xs" />
@@ -300,7 +288,7 @@
         </div>
 
         <div class="mt-6 pt-3 border-t border-stone-700/50 text-[11px] text-stone-500 text-center">
-            Digital Menu System - Powered by richen
+            Smart Resto Phygital System - Powered by Firebase
         </div>
     </div>
 
@@ -558,7 +546,6 @@
         }
 
         window.openAdminModal = () => {
-            document.getElementById('input-source-resto-id').value = '';
             document.getElementById('input-resto-id').value = restoId;
             document.getElementById('input-name').value = restoConfig.name;
             document.getElementById('input-logo').value = restoConfig.logo || '';
@@ -572,54 +559,6 @@
             document.getElementById('admin-modal').classList.remove('hidden');
         }
         window.closeAdminModal = () => document.getElementById('admin-modal').classList.add('hidden');
-
-        // FITUR TAMBAHAN: Fungsi Menyalin Data dari Resto Lain
-        window.copyDataFromAnotherResto = async function() {
-            let sourceId = document.getElementById('input-source-resto-id').value.trim();
-            if(!sourceId) {
-                alert("Masukkan ID Resto sumber terlebih dahulu!");
-                return;
-            }
-            if(sourceId === restoId) {
-                alert("Tidak dapat menyalin dari ID resto yang sama!");
-                return;
-            }
-
-            try {
-                let sourceRef = ref(db, 'restaurants/' + sourceId);
-                let snapshot = await get(sourceRef);
-                if(snapshot.exists()) {
-                    let sourceData = snapshot.val();
-                    // Salin data ke variabel lokal admin
-                    restoConfig.name = sourceData.name || restoConfig.name;
-                    restoConfig.logo = sourceData.logo || "";
-                    restoConfig.qrisUrl = sourceData.qrisUrl || "";
-                    restoConfig.banks = sourceData.banks ? JSON.parse(JSON.stringify(sourceData.banks)) : [];
-                    restoConfig.waiterMappings = sourceData.waiterMappings ? JSON.parse(JSON.stringify(sourceData.waiterMappings)) : [];
-                    restoConfig.reviewUrl = sourceData.reviewUrl || "";
-                    restoConfig.waNumber = sourceData.waNumber || "";
-                    restoConfig.categories = sourceData.categories ? JSON.parse(JSON.stringify(sourceData.categories)) : ["Makanan", "Minuman"];
-                    restoConfig.products = sourceData.products ? JSON.parse(JSON.stringify(sourceData.products)) : [];
-
-                    // Refresh tampilan form admin dengan data yang baru disalin
-                    document.getElementById('input-name').value = restoConfig.name;
-                    document.getElementById('input-logo').value = restoConfig.logo;
-                    document.getElementById('input-qris').value = restoConfig.qrisUrl;
-                    document.getElementById('input-review').value = restoConfig.reviewUrl;
-                    document.getElementById('input-wa').value = restoConfig.waNumber;
-                    renderAdminBanks();
-                    renderAdminWaiterMappings();
-                    renderAdminCategories();
-                    renderAdminProducts();
-
-                    alert("Data berhasil disalin dari ID Resto: " + sourceId + "! Jangan lupa klik tombol 'Simpan ke Firebase' di bawah.");
-                } else {
-                    alert("ID Resto sumber tidak ditemukan di database!");
-                }
-            } catch(err) {
-                alert("Gagal menyalin data: " + err.message);
-            }
-        }
 
         function renderAdminBanks() {
             const container = document.getElementById('admin-bank-inputs');
