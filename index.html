@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Resto & Digital Menu</title>
+    <title>Menu Digital</title>
     <!-- Tailwind CSS untuk styling modern -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome untuk ikon -->
@@ -35,7 +35,7 @@
                 <button onclick="openMenuModal()" class="flex items-center justify-between w-full p-4 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold rounded-2xl shadow-lg transition-all transform active:scale-95">
                     <span class="flex items-center gap-3">
                         <i class="fa-solid fa-book-open text-xl"></i>
-                        📜 Lihat Menu & Alergi
+                        Lihat Menu
                     </span>
                     <i class="fa-solid fa-chevron-right text-sm"></i>
                 </button>
@@ -43,7 +43,7 @@
                 <a id="btn-review" href="#" target="_blank" class="flex items-center justify-between w-full p-4 bg-stone-700 hover:bg-stone-600 text-white font-semibold rounded-2xl shadow-md border border-stone-600 transition-all transform active:scale-95">
                     <span class="flex items-center gap-3 text-amber-400">
                         <i class="fa-solid fa-star text-xl"></i>
-                        ⭐ Beri Ulasan Google Maps (Bintang 5)
+                        Beri Ulasan
                     </span>
                     <i class="fa-solid fa-chevron-right text-sm text-stone-400"></i>
                 </a>
@@ -51,7 +51,7 @@
                 <button onclick="openPaymentModal()" class="flex items-center justify-between w-full p-4 bg-stone-700 hover:bg-stone-600 text-white font-semibold rounded-2xl shadow-md border border-stone-600 transition-all transform active:scale-95">
                     <span class="flex items-center gap-3 text-emerald-400">
                         <i class="fa-solid fa-wallet text-xl"></i>
-                        💳 Metode Pembayaran & QRIS
+                        Metode Pembayaran & QRIS
                     </span>
                     <i class="fa-solid fa-qrcode text-sm text-stone-400"></i>
                 </button>
@@ -59,7 +59,7 @@
                 <button onclick="callWaiter()" class="flex items-center justify-between w-full p-4 bg-stone-700 hover:bg-stone-600 text-white font-semibold rounded-2xl shadow-md border border-stone-600 transition-all transform active:scale-95">
                     <span class="flex items-center gap-3 text-sky-400">
                         <i class="fa-solid fa-bell text-xl"></i>
-                        🛎️ Panggil Pelayan
+                        Panggil Pelayan
                     </span>
                     <i class="fa-solid fa-hand text-sm text-stone-400"></i>
                 </button>
@@ -288,7 +288,7 @@
         </div>
 
         <div class="mt-6 pt-3 border-t border-stone-700/50 text-[11px] text-stone-500 text-center">
-            Smart Resto Phygital System - Powered by Firebase
+            Menu Digital System - Powered by richen
         </div>
     </div>
 
@@ -311,9 +311,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // Ambil ID Resto dari URL (Contoh: ?resto=nama-resto-anda) -> Cukup 1 QR Code untuk semua meja!
         const urlParams = new URLSearchParams(window.location.search);
         const restoId = urlParams.get('resto') || 'resto_baru';
         
+        // Nomor meja dikelola mandiri oleh customer via localStorage / pop-up
         let tableNum = localStorage.getItem('smart_resto_table_' + restoId) || '';
         let selectedCategory = 'Semua';
         let cart = {};
@@ -332,21 +334,19 @@
             products: []
         };
 
+        // Sinkronisasi Realtime dengan Firebase Database
         const restoRef = ref(db, 'restaurants/' + restoId);
         
         onValue(restoRef, (snapshot) => {
             if (snapshot.exists()) {
                 restoConfig = snapshot.val();
-                // Pastikan setiap item memiliki ID unik untuk keamanan sinkronisasi DOM
-                if (restoConfig.products) {
-                    restoConfig.products.forEach(p => { if (!p.id) p.id = '_' + Math.random().toString(36).substr(2, 9); });
-                }
             } else {
                 restoConfig = defaultData;
                 set(restoRef, defaultData);
             }
             loadConfigToUI();
             
+            // Jika nomor meja belum diisi oleh customer saat pertama buka, tampilkan modal input meja
             if (!tableNum) {
                 openTableModal();
             } else {
@@ -354,24 +354,15 @@
             }
         });
 
-        // Fungsi pembantu format nomor WhatsApp (memperbaiki bug jika diawali angka 0)
-        function formatWhatsAppNumber(num) {
-            if (!num) return '';
-            let cleaned = String(num).trim().replace(/\D/g, '');
-            if (cleaned.startsWith('0')) {
-                cleaned = '62' + cleaned.slice(1);
-            }
-            return cleaned;
-        }
-
+        // Fungsi penentu nomor WhatsApp pelayan berdasarkan meja secara dinamis
         function getTargetWaiterWa() {
             if (restoConfig.waiterMappings && Array.isArray(restoConfig.waiterMappings)) {
                 let found = restoConfig.waiterMappings.find(m => String(m.table).trim() === String(tableNum).trim());
                 if (found && found.waiterWa) {
-                    return formatWhatsAppNumber(found.waiterWa);
+                    return found.waiterWa;
                 }
             }
-            return formatWhatsAppNumber(restoConfig.waNumber);
+            return restoConfig.waNumber;
         }
 
         window.openTableModal = function() {
@@ -458,16 +449,16 @@
             let products = restoConfig.products || [];
             let hasVisible = false;
 
-            products.forEach((p) => {
+            products.forEach((p, index) => {
                 let cat = p.category || (restoConfig.categories ? restoConfig.categories[0] : 'Makanan');
                 if ((selectedCategory !== 'Semua' && cat.toLowerCase() !== selectedCategory.toLowerCase())) return;
                 if (keyword && !p.name.toLowerCase().includes(keyword)) return;
 
                 hasVisible = true;
-                let currentQty = cart[p.id] || 0;
+                let currentQty = cart[index] || 0;
                 container.innerHTML += `
                     <div class="flex items-center justify-between bg-stone-700/60 p-2.5 rounded-xl border border-stone-600">
-                        <div class="flex items-center gap-3 cursor-pointer flex-1" onclick="openProductDetailById('${p.id}')">
+                        <div class="flex items-center gap-3 cursor-pointer flex-1" onclick="openProductDetail(${index})">
                             <img src="${p.img || 'https://via.placeholder.com/60'}" class="w-12 h-12 rounded-lg object-cover">
                             <div class="text-left overflow-hidden pr-2">
                                 <h4 class="font-semibold text-white text-sm truncate">${p.name}</h4>
@@ -476,9 +467,9 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button type="button" onclick="changeQty('${p.id}', -1)" class="w-7 h-7 bg-stone-600 rounded-lg text-white font-bold">-</button>
-                            <span id="qty-${p.id}" class="text-sm font-bold w-4 text-center">${currentQty}</span>
-                            <button type="button" onclick="changeQty('${p.id}', 1)" class="w-7 h-7 bg-amber-600 rounded-lg text-stone-950 font-bold">+</button>
+                            <button type="button" onclick="changeQty(${index}, -1)" class="w-7 h-7 bg-stone-600 rounded-lg text-white font-bold">-</button>
+                            <span id="qty-${index}" class="text-sm font-bold w-4 text-center">${currentQty}</span>
+                            <button type="button" onclick="changeQty(${index}, 1)" class="w-7 h-7 bg-amber-600 rounded-lg text-stone-950 font-bold">+</button>
                         </div>
                     </div>
                 `;
@@ -486,25 +477,22 @@
             if(!hasVisible) container.innerHTML = `<div class="text-center py-8 text-stone-400 text-xs">Menu tidak ditemukan.</div>`;
         }
 
-        window.changeQty = function(id, delta) {
-            cart[id] = (cart[id] || 0) + delta;
-            if(cart[id] < 0) cart[id] = 0;
-            let el = document.getElementById(`qty-${id}`);
-            if(el) el.innerText = cart[id];
+        window.changeQty = function(index, delta) {
+            cart[index] = (cart[index] || 0) + delta;
+            if(cart[index] < 0) cart[index] = 0;
+            document.getElementById(`qty-${index}`).innerText = cart[index];
         }
 
         window.sendToWhatsApp = function() {
             let message = `Halo Pelayan, saya ingin memesan dari *Meja #${tableNum}*:\n\n`;
             let total = 0, hasItem = false;
-            for(let id in cart) {
-                if(cart[id] > 0) {
+            for(let index in cart) {
+                if(cart[index] > 0) {
                     hasItem = true;
-                    let p = (restoConfig.products || []).find(item => item.id === id);
-                    if(p) {
-                        let sub = p.price * cart[id];
-                        total += sub;
-                        message += `- ${p.name} (${cart[id]}x) = Rp ${sub.toLocaleString('id-ID')}\n`;
-                    }
+                    let p = restoConfig.products[index];
+                    let sub = p.price * cart[index];
+                    total += sub;
+                    message += `- ${p.name} (${cart[index]}x) = Rp ${sub.toLocaleString('id-ID')}\n`;
                 }
             }
             if(!hasItem) { alert("Pilih minimal 1 menu!"); return; }
@@ -515,19 +503,16 @@
 
         window.sendProofToWhatsApp = function() {
             let total = 0, summary = "";
-            for(let id in cart) {
-                if(cart[id] > 0) {
-                    let p = (restoConfig.products || []).find(item => item.id === id);
-                    if(p) {
-                        let sub = p.price * cart[id];
-                        total += sub;
-                        summary += `- ${p.name} (${cart[id]}x)\n`;
-                    }
+            for(let index in cart) {
+                if(cart[index] > 0) {
+                    let p = restoConfig.products[index];
+                    let sub = p.price * cart[index];
+                    total += sub;
+                    summary += `- ${p.name} (${cart[index]}x)\n`;
                 }
             }
             let msg = `Halo Kak, berikut Bukti Transfer pembayaran dari *Meja #${tableNum}*:\n\n${summary}\n*Total: Rp ${total.toLocaleString('id-ID')}*\n*(Silakan lampirkan foto screenshot bukti transfer)*`;
-            let targetWa = formatWhatsAppNumber(restoConfig.waNumber);
-            window.open(`https://wa.me/${targetWa}?text=` + encodeURIComponent(msg), '_blank');
+            window.open(`https://wa.me/${restoConfig.waNumber}?text=` + encodeURIComponent(msg), '_blank');
         }
 
         window.callWaiter = function() {
@@ -536,14 +521,13 @@
             window.open(`https://wa.me/${targetWa}?text=` + encodeURIComponent(msg), '_blank');
         }
 
+        // Global UI Controls
         window.openPaymentModal = () => document.getElementById('payment-modal').classList.remove('hidden');
         window.closePaymentModal = () => document.getElementById('payment-modal').classList.add('hidden');
         window.openMenuModal = () => { document.getElementById('customer-search-input').value = ''; filterCategory('Semua'); document.getElementById('menu-modal').classList.remove('hidden'); }
         window.closeMenuModal = () => document.getElementById('menu-modal').classList.add('hidden');
-        
-        window.openProductDetailById = function(id) {
-            let p = (restoConfig.products || []).find(item => item.id === id);
-            if(!p) return;
+        window.openProductDetail = (i) => {
+            let p = restoConfig.products[i];
             document.getElementById('detail-img').src = p.img || '';
             document.getElementById('detail-name').innerText = p.name;
             document.getElementById('detail-price').innerText = `Rp ${Number(p.price).toLocaleString('id-ID')}`;
@@ -595,6 +579,7 @@
         window.addBankInput = () => { syncDOMToConfig(); restoConfig.banks.push({bankName:"", accNumber:"", accName:""}); renderAdminBanks(); }
         window.removeBank = (i) => { syncDOMToConfig(); restoConfig.banks.splice(i,1); renderAdminBanks(); }
 
+        // Fungsi pengelolaan input mapping meja ke pelayan di panel admin
         function renderAdminWaiterMappings() {
             const container = document.getElementById('admin-waiter-mapping-inputs');
             if(!container) return;
@@ -631,28 +616,28 @@
             const container = document.getElementById('admin-product-inputs');
             container.innerHTML = '';
             const keyword = document.getElementById('admin-search-input').value.toLowerCase();
-            (restoConfig.products || []).forEach((p) => {
+            (restoConfig.products || []).forEach((p, i) => {
                 if(keyword && !p.name.toLowerCase().includes(keyword)) return;
                 let opts = '';
                 (restoConfig.categories || []).forEach(c => { opts += `<option value="${c}" ${p.category === c ? 'selected' : ''}>${c}</option>`; });
                 container.innerHTML += `
-                    <div class="flex flex-col gap-2 bg-stone-800 p-2.5 rounded border border-stone-700" data-product-id="${p.id}">
+                    <div class="flex flex-col gap-2 bg-stone-800 p-2.5 rounded border border-stone-700">
                         <div class="flex gap-2">
-                            <input type="text" value="${p.name}" placeholder="Nama Menu" class="p-1.5 bg-stone-700 rounded w-1/2 text-xs text-white adm-prod-name" data-id="${p.id}">
-                            <input type="number" value="${p.price}" placeholder="Harga" class="p-1.5 bg-stone-700 rounded w-1/3 text-xs text-white adm-prod-price" data-id="${p.id}">
-                            <button type="button" onclick="removeProductById('${p.id}')" class="text-red-400 ml-auto"><i class="fa-solid fa-trash"></i></button>
+                            <input type="text" value="${p.name}" placeholder="Nama Menu" class="p-1.5 bg-stone-700 rounded w-1/2 text-xs text-white" id="adm-prod-name-${i}">
+                            <input type="number" value="${p.price}" placeholder="Harga" class="p-1.5 bg-stone-700 rounded w-1/3 text-xs text-white" id="adm-prod-price-${i}">
+                            <button type="button" onclick="removeProduct(${i})" class="text-red-400 ml-auto"><i class="fa-solid fa-trash"></i></button>
                         </div>
                         <div class="flex gap-2">
-                            <input type="text" value="${p.img || ''}" placeholder="URL Gambar" class="p-1.5 bg-stone-700 rounded flex-1 text-xs text-white adm-prod-img" data-id="${p.id}">
-                            <select class="p-1.5 bg-stone-700 rounded text-xs text-white adm-prod-cat" data-id="${p.id}">${opts}</select>
+                            <input type="text" value="${p.img || ''}" placeholder="URL Gambar" class="p-1.5 bg-stone-700 rounded flex-1 text-xs text-white" id="adm-prod-img-${i}">
+                            <select id="adm-prod-cat-${i}" class="p-1.5 bg-stone-700 rounded text-xs text-white">${opts}</select>
                         </div>
-                        <input type="text" value="${p.desc || ''}" placeholder="Deskripsi Singkat" class="p-1.5 bg-stone-700 rounded text-xs text-white adm-prod-desc" data-id="${p.id}">
+                        <input type="text" value="${p.desc || ''}" placeholder="Deskripsi Singkat" class="p-1.5 bg-stone-700 rounded text-xs text-white" id="adm-prod-desc-${i}">
                     </div>
                 `;
             });
         }
-        window.addProductInput = () => { syncDOMToConfig(); restoConfig.products.push({id: '_' + Math.random().toString(36).substr(2, 9), name:"", price:0, img:"", desc:"", category:restoConfig.categories[0]}); renderAdminProducts(); }
-        window.removeProductById = (id) => { syncDOMToConfig(); restoConfig.products = restoConfig.products.filter(p => p.id !== id); renderAdminProducts(); }
+        window.addProductInput = () => { syncDOMToConfig(); restoConfig.products.push({name:"", price:0, img:"", desc:"", category:restoConfig.categories[0]}); renderAdminProducts(); }
+        window.removeProduct = (i) => { syncDOMToConfig(); restoConfig.products.splice(i,1); renderAdminProducts(); }
 
         window.handleLogoUpload = (e) => {
             const f = e.target.files[0];
@@ -694,28 +679,20 @@
             });
             if(newCats.length > 0) restoConfig.categories = newCats;
 
-            // Sinkronisasi produk aman berbasis ID (tidak rentan tertukar saat kolom pencarian aktif)
-            if (restoConfig.products) {
-                restoConfig.products = restoConfig.products.map(p => {
-                    let nameInput = document.querySelector(`.adm-prod-name[data-id="${p.id}"]`);
-                    let priceInput = document.querySelector(`.adm-prod-price[data-id="${p.id}"]`);
-                    let imgInput = document.querySelector(`.adm-prod-img[data-id="${p.id}"]`);
-                    let descInput = document.querySelector(`.adm-prod-desc[data-id="${p.id}"]`);
-                    let catInput = document.querySelector(`.adm-prod-cat[data-id="${p.id}"]`);
-
-                    if (nameInput) {
-                        return {
-                            id: p.id,
-                            name: nameInput.value,
-                            price: Number(priceInput.value) || 0,
-                            img: imgInput.value,
-                            desc: descInput.value,
-                            category: catInput.value
-                        };
-                    }
-                    return p; // Pertahankan data asli jika sedang terfilter/tidak tampil di DOM
-                });
-            }
+            restoConfig.products = (restoConfig.products || []).map((p, i) => {
+                let name = document.getElementById(`adm-prod-name-${i}`);
+                let price = document.getElementById(`adm-prod-price-${i}`);
+                let img = document.getElementById(`adm-prod-img-${i}`);
+                let desc = document.getElementById(`adm-prod-desc-${i}`);
+                let cat = document.getElementById(`adm-prod-cat-${i}`);
+                return {
+                    name: name ? name.value : p.name,
+                    price: price ? Number(price.value) : p.price,
+                    img: img ? img.value : p.img,
+                    desc: desc ? desc.value : p.desc,
+                    category: cat ? cat.value : p.category
+                };
+            });
         }
 
         window.saveAdminDataToFirebase = function() {
