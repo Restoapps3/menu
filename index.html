@@ -258,6 +258,16 @@
                 </div>
 
                 <hr class="border-stone-700 my-2">
+                <div class="bg-stone-800 p-3 rounded-xl border border-amber-600/30 space-y-2">
+                    <h3 class="font-bold text-amber-400 text-xs"><i class="fa-solid fa-paste mr-1"></i> Import Cepat (Copy-Paste Fleksibel dari Excel / Word / AI)</h3>
+                    <p class="text-[11px] text-stone-300">Sistem otomatis membaca walau urutan dibolak-balik (misal: Link Gambar dulu, Deskripsi, Harga, Nama, dll.). Pisahkan dengan Tab atau Titik Koma (<code class="text-amber-300 bg-stone-900 px-1 py-0.5 rounded">;</code>). Jika kosong, sistem otomatis mengisi gambar yang sesuai:</p>
+                    <textarea id="bulk-paste-input" rows="3" class="w-full p-2 rounded bg-stone-700 border border-stone-600 text-white text-xs font-mono" placeholder="Contoh: https://...	Nasi Goreng Spesial	25000	Makanan	Lezat mantap"></textarea>
+                    <button type="button" onclick="processBulkPaste()" class="w-full py-2 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold rounded-lg text-xs shadow">
+                        <i class="fa-solid fa-file-arrow-down mr-1"></i> Masukkan ke Daftar Menu di Bawah
+                    </button>
+                </div>
+
+                <hr class="border-stone-700 my-2">
                 <h3 class="font-bold text-amber-400">Kelola Menu & Harga</h3>
                 <div>
                     <div class="relative">
@@ -302,10 +312,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Mengambil parameter ID restoran dari URL secara dinamis (multi-tenant)
-        // Contoh: ?id=resto_a atau ?id=resto_b
-        const urlParams = new URLSearchParams(window.location.search);
-        const restoId = urlParams.get('id') || 'default_resto';
+        const restoId = 'default_resto';
         
         let tableNum = localStorage.getItem('smart_resto_table_' + restoId) || '';
         let selectedCategory = 'Semua';
@@ -326,7 +333,7 @@
             } else {
                 restoNameClickTimer = setTimeout(() => {
                     restoNameClickCount = 0;
-                }, 1000); // Reset hitungan jika jeda lebih dari 1 detik
+                }, 1000);
             }
         }
 
@@ -361,10 +368,9 @@
             }
         });
 
-        // Fungsi pembersih & validasi nomor WhatsApp agar selalu berformat internasional (62...)
         function cleanWhatsAppNumber(num) {
             if (!num) return "";
-            let cleaned = String(num).replace(/\D/g, ''); // Hapus semua karakter non-angka
+            let cleaned = String(num).replace(/\D/g, '');
             if (cleaned.startsWith('0')) {
                 cleaned = '62' + cleaned.slice(1);
             }
@@ -574,6 +580,7 @@
             document.getElementById('input-qris').value = restoConfig.qrisUrl || '';
             document.getElementById('input-review').value = restoConfig.reviewUrl || '';
             document.getElementById('input-wa').value = restoConfig.waNumber || '';
+            document.getElementById('bulk-paste-input').value = '';
             renderAdminBanks();
             renderAdminWaiterMappings();
             renderAdminCategories();
@@ -663,6 +670,120 @@
         window.addProductInput = () => { syncDOMToConfig(); restoConfig.products.push({name:"", price:0, img:"", desc:"", category:restoConfig.categories[0] || "Makanan"}); renderAdminProducts(); }
         window.removeProduct = (i) => { syncDOMToConfig(); restoConfig.products.splice(i,1); renderAdminProducts(); }
 
+        // Fungsi Pintar: Otomatis Mendeteksi Kolom Tidak Berurutan & Menyediakan Gambar Sesuai
+        window.processBulkPaste = function() {
+            syncDOMToConfig();
+            let rawText = document.getElementById('bulk-paste-input').value.trim();
+            if (!rawText) {
+                alert("Silakan paste data dari Excel, Spreadsheet, Word, atau AI terlebih dahulu pada kotak yang tersedia!");
+                return;
+            }
+
+            let lines = rawText.split('\n');
+            let addedCount = 0;
+            let defaultCat = (restoConfig.categories && restoConfig.categories.length > 0) ? restoConfig.categories[0] : "Makanan";
+
+            // Daftar gambar kuliner cerdas/relevan otomatis berdasarkan kata kunci nama produk
+            const getSmartImage = (productName) => {
+                let lower = productName.toLowerCase();
+                if (lower.includes('nasi goreng') || lower.includes('nasgor')) return 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=500&q=80';
+                if (lower.includes('mie') || lower.includes('bakmi') || lower.includes('ramen')) return 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=500&q=80';
+                if (lower.includes('ayam') || lower.includes('crispy') || lower.includes('geprek')) return 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=500&q=80';
+                if (lower.includes('sate') || lower.includes('satay')) return 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=500&q=80';
+                if (lower.includes('bakso') || lower.includes('soup') || lower.includes('soto')) return 'https://images.unsplash.com/photo-1569050467405-c5a439227181?auto=format&fit=crop&w=500&q=80';
+                if (lower.includes('kopi') || lower.includes('coffee') || lower.includes('latte')) return 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=500&q=80';
+                if (lower.includes('teh') || lower.includes('tea') || lower.includes('es')) return 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=80';
+                if (lower.includes('jus') || lower.includes('juice') || lower.includes('fruit')) return 'https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=500&q=80';
+                if (lower.includes('burger') || lower.includes('sandwich')) return 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=80';
+                if (lower.includes('pizza') || lower.includes('slice')) return 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=500&q=80';
+                // Gambar umum kuliner default yang lezat
+                return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80';
+            };
+
+            lines.forEach(line => {
+                if (!line.trim()) return;
+                // Mendukung pemisah Tab (excel/spreadsheet) atau titik koma (;)
+                let cols = line.includes('\t') ? line.split('\t').map(c => c.trim()) : line.split(';').map(c => c.trim());
+                
+                let name = "";
+                let price = 0;
+                let category = defaultCat;
+                let img = "";
+                let desc = "";
+
+                // Algoritma Cerdas: Membaca kolom secara fleksibel tidak peduli urutannya
+                cols.forEach(col => {
+                    if (!col) return;
+                    let lowerCol = col.toLowerCase();
+
+                    // Deteksi jika kolom adalah URL Gambar (dimulai dengan http/https atau berakhiran ekstensi gambar/domain gambar)
+                    if (lowerCol.startsWith('http://') || lowerCol.startsWith('https://') || lowerCol.includes('images.unsplash.com') || lowerCol.includes('imgur.com') || lowerCol.includes('drive.google.com')) {
+                        img = col;
+                    } 
+                    // Deteksi jika kolom adalah Harga (angka murni atau mengandung format Rupiah/angka besar)
+                    else if (/^\d{3,}$/.test(col.replace(/[^\d]/g, '')) && !name && price === 0 && !lowerCol.includes('http')) {
+                        let parsed = Number(col.replace(/[^\d]/g, ''));
+                        if (!isNaN(parsed) && parsed > 0) {
+                            price = parsed;
+                        } else {
+                            if (!name) name = col;
+                        }
+                    } 
+                    // Deteksi Kategori (mencocokkan dengan kategori yang ada atau kata kunci kategori umum)
+                    else if ((restoConfig.categories && restoConfig.categories.some(c => c.toLowerCase() === lowerCol)) || ['makanan', 'minuman', 'dessert', 'snack', 'camilan', 'paket'].includes(lowerCol)) {
+                        category = col;
+                    } 
+                    // Jika belum ada Nama, set sebagai Nama Produk
+                    else if (!name) {
+                        name = col;
+                    } 
+                    // Jika Nama sudah ada tapi Harga belum dan kolom berupa angka
+                    else if (price === 0 && /^\d+$/.test(col.replace(/[^\d]/g, ''))) {
+                        price = Number(col.replace(/[^\d]/g, ''));
+                    } 
+                    // Selebihnya dianggap sebagai Deskripsi
+                    else if (!desc) {
+                        desc = col;
+                    } else {
+                        desc += " " + col;
+                    }
+                });
+
+                // Fallback validasi jika nama terdeteksi sebagai angka atau sebaliknya
+                if (!name && cols.length > 0) name = cols[0];
+
+                // Jika link gambar kosong atau tidak valid, otomatis sistem mencarikan gambar yang tepat dan sesuai
+                if (!img || !img.startsWith('http')) {
+                    img = getSmartImage(name);
+                }
+
+                if (name) {
+                    // Jika kategori hasil paste belum ada di daftar, masukkan otomatis
+                    if (category && !restoConfig.categories.includes(category)) {
+                        restoConfig.categories.push(category);
+                    }
+
+                    restoConfig.products.push({
+                        name: name,
+                        price: isNaN(price) ? 0 : price,
+                        category: category || defaultCat,
+                        img: img,
+                        desc: desc || "Menu spesial pilihan."
+                    });
+                    addedCount++;
+                }
+            });
+
+            if (addedCount > 0) {
+                document.getElementById('bulk-paste-input').value = '';
+                renderAdminCategories();
+                renderAdminProducts();
+                alert(`Berhasil mengimpor ${addedCount} menu secara cerdas! Gambar otomatis disesuaikan jika kosong. Jangan lupa klik "Simpan ke Firebase" di bawah.`);
+            } else {
+                alert("Format data tidak dikenali. Pastikan baris data valid.");
+            }
+        }
+
         window.handleLogoUpload = (e) => {
             const f = e.target.files[0];
             if(f) {
@@ -688,7 +809,6 @@
             }
         }
 
-        // Fungsi Sinkronisasi DOM secara Aman Tanpa Kehilangan Data Input
         function syncDOMToConfig() {
             let newBanks = [];
             let bankRows = document.querySelectorAll('#admin-bank-inputs > div');
