@@ -288,6 +288,22 @@
             </div>
         </div>
 
+        <!-- ================= MODAL NOTIFIKASI SUKSES SIMPAN ================= -->
+        <div id="success-modal" class="hidden absolute inset-0 bg-stone-950/80 z-50 p-6 flex flex-col justify-center items-center">
+            <div class="w-4/5 max-w-xs bg-stone-800 p-6 rounded-2xl border border-emerald-600/50 shadow-2xl text-center space-y-4 animate-bounce-short">
+                <div class="w-16 h-16 mx-auto bg-emerald-600/20 text-emerald-400 rounded-full flex items-center justify-center text-3xl border border-emerald-500/40">
+                    <i class="fa-solid fa-check"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white mb-1">Berhasil Disimpan!</h3>
+                    <p class="text-xs text-stone-300">Data restoran dan menu telah berhasil disinkronkan ke Firebase secara realtime.</p>
+                </div>
+                <button onclick="closeSuccessModal()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow text-xs">
+                    OK
+                </button>
+            </div>
+        </div>
+
         <div class="mt-6 pt-3 border-t border-stone-700/50 text-[11px] text-stone-500 text-center">
             Smart Resto Phygital System - Powered by Firebase
         </div>
@@ -588,6 +604,7 @@
             document.getElementById('admin-modal').classList.remove('hidden');
         }
         window.closeAdminModal = () => document.getElementById('admin-modal').classList.add('hidden');
+        window.closeSuccessModal = () => document.getElementById('success-modal').classList.add('hidden');
 
         function renderAdminBanks() {
             const container = document.getElementById('admin-bank-inputs');
@@ -890,9 +907,10 @@
             saveBtn.innerText = "Menyimpan...";
 
             set(restoRef, restoConfig).then(() => {
-                alert("Data berhasil disimpan & disinkronkan secara Realtime ke Firebase!");
                 saveBtn.disabled = false;
                 saveBtn.innerText = "Simpan ke Firebase (Realtime)";
+                // Menampilkan pop-up notifikasi sukses yang bersih
+                document.getElementById('success-modal').classList.remove('hidden');
                 closeAdminModal();
             }).catch((err) => {
                 alert("Gagal menyimpan: " + err.message);
