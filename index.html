@@ -697,7 +697,7 @@
                 return;
             }
 
-            // Filter baris kosong agar tidak ada baris hantu/ganda
+            // Memisahkan baris dan membuang baris kosong
             let lines = rawText.split('\n').filter(line => line.trim() !== '');
             let addedCount = 0;
             let defaultCat = (restoConfig.categories && restoConfig.categories.length > 0) ? restoConfig.categories[0] : "Makanan";
@@ -719,61 +719,85 @@
 
             lines.forEach(line => {
                 if (!line.trim()) return;
-                // Filter kolom kosong
-                let cols = line.includes('\t') ? line.split('\t').map(c => c.trim()).filter(c => c !== '') : line.split(';').map(c => c.trim()).filter(c => c !== '');
-                
+
+                // Mendeteksi pemisah: Tab (Excel) atau Titik Koma / Koma jika terstruktur rapi
+                let cols = line.includes('\t') ? line.split('\t') : (line.includes(';') ? line.split(';') : line.split(','));
+                cols = cols.map(c => c.trim()).filter(c => c !== '');
+
                 let name = "";
                 let price = 0;
                 let category = defaultCat;
                 let img = "";
                 let desc = "";
 
-                cols.forEach(col => {
-                    if (!col) return;
-                    let lowerCol = col.toLowerCase();
-
-                    if (lowerCol.startsWith('http://') || lowerCol.startsWith('https://') || lowerCol.includes('images.unsplash.com') || lowerCol.includes('imgur.com') || lowerCol.includes('drive.google.com')) {
-                        img = col;
-                    } 
-                    else if (/^\d{3,}$/.test(col.replace(/[^\d]/g, '')) && !name && price === 0 && !lowerCol.includes('http')) {
-                        let parsed = Number(col.replace(/[^\d]/g, ''));
-                        if (!isNaN(parsed) && parsed > 0) {
-                            price = parsed;
+                // Jika hanya ada 1 atau 2 kolom (misal format teks biasa: "Nasi Goreng 15000")
+                if (cols.length <= 2 && line.includes(' ')) {
+                    let parts = line.split(/\s+/);
+                    let potentialNameParts = [];
+                    parts.forEach(p => {
+                        let cleanNum = p.replace(/[^\d]/g, '');
+                        if (/^\d+$/.test(cleanNum) && Number(cleanNum) > 999 && price === 0) {
+                            price = Number(cleanNum);
                         } else {
-                            if (!name) name = col;
+                            potentialNameParts.push(p);
                         }
-                    } 
-                    else if ((restoConfig.categories && restoConfig.categories.some(c => c.toLowerCase() === lowerCol)) || ['makanan', 'minuman', 'dessert', 'snack', 'camilan', 'paket'].includes(lowerCol)) {
-                        category = col;
-                    } 
-                    else if (!name) {
-                        name = col;
-                    } 
-                    else if (price === 0 && /^\d+$/.test(col.replace(/[^\d]/g, ''))) {
-                        price = Number(col.replace(/[^\d]/g, ''));
-                    } 
-                    else if (!desc) {
-                        desc = col;
-                    } else {
-                        desc += " " + col;
+                    });
+                    if (potentialNameParts.length > 0) {
+                        name = potentialNameParts.join(' ');
                     }
-                });
+                } else {
+                    // Analisis multi-kolom secara spesifik
+                    cols.forEach(col => {
+                        let lower = col.toLowerCase();
+                        let cleanNumStr = col.replace(/[^\d]/g, '');
+                        let numVal = Number(cleanNumStr);
 
-                if (!name && cols.length > 0) name = cols[0];
+                        if (lower.startsWith('http://') || lower.startsWith('https://') || lower.includes('images.unsplash.com') || lower.includes('imgur.com')) {
+                            img = col;
+                        } 
+                        else if (price === 0 && /^\d+$/.test(cleanNumStr) && numVal > 99) {
+                            price = numVal;
+                        } 
+                        else if (
+                            (restoConfig.categories && restoConfig.categories.some(c => c.toLowerCase() === lower)) || 
+                            ['makanan', 'minuman', 'dessert', 'snack', 'camilan', 'paket', 'coffee', 'beverage', 'food'].includes(lower)
+                        ) {
+                            category = col;
+                        } 
+                        else if (!name && !/^\d+$/.test(cleanNumStr)) {
+                            name = col;
+                        } 
+                        else if (price === 0 && !isNaN(numVal) && numVal > 0) {
+                            price = numVal;
+                        } 
+                        else {
+                            if (!desc) desc = col;
+                            else desc += " " + col;
+                        }
+                    });
+                }
+
+                if (!name && cols.length > 0) {
+                    name = cols[0];
+                }
 
                 if (!img || !img.startsWith('http')) {
                     img = getSmartImage(name);
                 }
 
                 if (name) {
-                    if (category && !restoConfig.categories.includes(category)) {
+                    let matchedCat = restoConfig.categories.find(c => c.toLowerCase() === category.toLowerCase());
+                    let finalCategory = matchedCat ? matchedCat : category;
+                    
+                    if (!matchedCat && category) {
                         restoConfig.categories.push(category);
+                        finalCategory = category;
                     }
 
                     restoConfig.products.push({
                         name: name,
                         price: isNaN(price) ? 0 : price,
-                        category: category || defaultCat,
+                        category: finalCategory || defaultCat,
                         img: img,
                         desc: desc || "Menu spesial pilihan."
                     });
@@ -785,9 +809,9 @@
                 document.getElementById('bulk-paste-input').value = '';
                 renderAdminCategories();
                 renderAdminProducts();
-                alert(`Berhasil mengimpor ${addedCount} menu secara cerdas! Gambar otomatis disesuaikan jika kosong. Jangan lupa klik "Simpan ke Firebase" di bawah.`);
+                alert(`Berhasil mengimpor ${addedCount} menu dengan akurat! Jangan lupa klik tombol "Simpan ke Firebase" di bawah untuk menyimpan permanen.`);
             } else {
-                alert("Format data tidak dikenali. Pastikan baris data valid.");
+                alert("Format data tidak dapat dibaca. Pastikan format baris teks valid (Contoh: Nama Menu [Tab] Harga).");
             }
         }
 
