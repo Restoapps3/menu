@@ -330,10 +330,21 @@
 
         const restoId = 'default_resto';
         
-        let tableNum = localStorage.getItem('smart_resto_table_' + restoId) || '';
         let selectedCategory = 'Semua';
         let cart = {};
         let restoConfig = {};
+
+        // ALUR QR CODE AKTIVASI & PENYIMPANAN OTOMATIS KE FIREBASE & LOCALSTORAGE
+        const urlParams = new URLSearchParams(window.location.search);
+        let paramTable = urlParams.get('table') || urlParams.get('meja');
+
+        let tableNum = '';
+        if (paramTable) {
+            tableNum = paramTable.replace(/[^\w\s-]/gi, '').trim();
+            localStorage.setItem('smart_resto_table_' + restoId, tableNum);
+        } else {
+            tableNum = localStorage.getItem('smart_resto_table_' + restoId) || '';
+        }
 
         // Variabel untuk menghitung klik pada nama restoran (5x)
         let restoNameClickCount = 0;
@@ -377,6 +388,8 @@
             }
             loadConfigToUI();
             
+            // Jika nomor meja belum ada sama sekali, arahkan ke modal input meja mandiri.
+            // Jika sudah ada dari scan QR Code URL, langsung lewati modal dan tampilkan halaman utama restoran.
             if (!tableNum) {
                 openTableModal();
             } else {
