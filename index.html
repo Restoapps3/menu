@@ -25,7 +25,7 @@
                 <!-- Nama Restoran dengan event klik 5x untuk akses admin -->
                 <h1 id="resto-name" onclick="handleRestoNameClick()" class="text-2xl font-bold tracking-tight text-white cursor-pointer select-none">Memuat Restoran...</h1>
                 <!-- Info Nomor Meja Tamu & Tombol Ubah Meja -->
-                <div class="mt-2 inline-flex items-center gap-2 bg-stone-700/80 px-3 py-1 rounded-full border border-stone-600 text-xs text-stone-300">
+                <div class="mt-2 inline-flex items-center gap-2 bg-stone-700/85 px-3 py-1 rounded-full border border-stone-600 text-xs text-stone-300">
                     <span><i class="fa-solid fa-chair text-amber-400 mr-1"></i> Meja: <strong id="display-table-num" class="text-white">-</strong></span>
                     <button onclick="openTableModal()" class="text-amber-400 hover:text-amber-300 underline font-semibold ml-1">Ubah</button>
                 </div>
@@ -315,14 +315,14 @@
         import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyAKbysCa5tOgnN4r99YKBkAmCLwzOgN4Q",
-            authDomain: "toko-sin.firebaseapp.com",
-            databaseURL: "https://toko-sin-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "toko-sin",
-            storageBucket: "toko-sin.firebasestorage.app",
-            messagingSenderId: "730575620129",
-            appId: "1:730575620129:web:7c24c9ab901f89adf57b60",
-            measurementId: "G-XX9JNDMPCM"
+            apiKey: "AIzaSyBgAgWv_PDn_dBcevmcNl6t7LEFX4St2A",
+            authDomain: "menu-resto-a6f92.firebaseapp.com",
+            databaseURL: "https://menu-resto-a6f92-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "menu-resto-a6f92",
+            storageBucket: "menu-resto-a6f92.firebasestorage.app",
+            messagingSenderId: "292312522372",
+            appId: "1:292312522372:web:4480beca5eea846af3acd1",
+            measurementId: "G-6G4GTRDH3M"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -687,7 +687,6 @@
         window.addProductInput = () => { syncDOMToConfig(); restoConfig.products.push({name:"", price:0, img:"", desc:"", category:restoConfig.categories[0] || "Makanan"}); renderAdminProducts(); }
         window.removeProduct = (i) => { syncDOMToConfig(); restoConfig.products.splice(i,1); renderAdminProducts(); }
 
-        // Fungsi Pintar: Otomatis Mendeteksi Kolom Tidak Berurutan & Menyediakan Gambar Sesuai
         window.processBulkPaste = function() {
             syncDOMToConfig();
             let rawText = document.getElementById('bulk-paste-input').value.trim();
@@ -700,7 +699,6 @@
             let addedCount = 0;
             let defaultCat = (restoConfig.categories && restoConfig.categories.length > 0) ? restoConfig.categories[0] : "Makanan";
 
-            // Daftar gambar kuliner cerdas/relevan otomatis berdasarkan kata kunci nama produk
             const getSmartImage = (productName) => {
                 let lower = productName.toLowerCase();
                 if (lower.includes('nasi goreng') || lower.includes('nasgor')) return 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=500&q=80';
@@ -713,13 +711,11 @@
                 if (lower.includes('jus') || lower.includes('juice') || lower.includes('fruit')) return 'https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=500&q=80';
                 if (lower.includes('burger') || lower.includes('sandwich')) return 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=80';
                 if (lower.includes('pizza') || lower.includes('slice')) return 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=500&q=80';
-                // Gambar umum kuliner default yang lezat
                 return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80';
             };
 
             lines.forEach(line => {
                 if (!line.trim()) return;
-                // Mendukung pemisah Tab (excel/spreadsheet) atau titik koma (;)
                 let cols = line.includes('\t') ? line.split('\t').map(c => c.trim()) : line.split(';').map(c => c.trim());
                 
                 let name = "";
@@ -728,16 +724,13 @@
                 let img = "";
                 let desc = "";
 
-                // Algoritma Cerdas: Membaca kolom secara fleksibel tidak peduli urutannya
                 cols.forEach(col => {
                     if (!col) return;
                     let lowerCol = col.toLowerCase();
 
-                    // Deteksi jika kolom adalah URL Gambar (dimulai dengan http/https atau berakhiran ekstensi gambar/domain gambar)
                     if (lowerCol.startsWith('http://') || lowerCol.startsWith('https://') || lowerCol.includes('images.unsplash.com') || lowerCol.includes('imgur.com') || lowerCol.includes('drive.google.com')) {
                         img = col;
                     } 
-                    // Deteksi jika kolom adalah Harga (angka murni atau mengandung format Rupiah/angka besar)
                     else if (/^\d{3,}$/.test(col.replace(/[^\d]/g, '')) && !name && price === 0 && !lowerCol.includes('http')) {
                         let parsed = Number(col.replace(/[^\d]/g, ''));
                         if (!isNaN(parsed) && parsed > 0) {
@@ -746,19 +739,15 @@
                             if (!name) name = col;
                         }
                     } 
-                    // Deteksi Kategori (mencocokkan dengan kategori yang ada atau kata kunci kategori umum)
                     else if ((restoConfig.categories && restoConfig.categories.some(c => c.toLowerCase() === lowerCol)) || ['makanan', 'minuman', 'dessert', 'snack', 'camilan', 'paket'].includes(lowerCol)) {
                         category = col;
                     } 
-                    // Jika belum ada Nama, set sebagai Nama Produk
                     else if (!name) {
                         name = col;
                     } 
-                    // Jika Nama sudah ada tapi Harga belum dan kolom berupa angka
                     else if (price === 0 && /^\d+$/.test(col.replace(/[^\d]/g, ''))) {
                         price = Number(col.replace(/[^\d]/g, ''));
                     } 
-                    // Selebihnya dianggap sebagai Deskripsi
                     else if (!desc) {
                         desc = col;
                     } else {
@@ -766,16 +755,13 @@
                     }
                 });
 
-                // Fallback validasi jika nama terdeteksi sebagai angka atau sebaliknya
                 if (!name && cols.length > 0) name = cols[0];
 
-                // Jika link gambar kosong atau tidak valid, otomatis sistem mencarikan gambar yang tepat dan sesuai
                 if (!img || !img.startsWith('http')) {
                     img = getSmartImage(name);
                 }
 
                 if (name) {
-                    // Jika kategori hasil paste belum ada di daftar, masukkan otomatis
                     if (category && !restoConfig.categories.includes(category)) {
                         restoConfig.categories.push(category);
                     }
@@ -909,7 +895,6 @@
             set(restoRef, restoConfig).then(() => {
                 saveBtn.disabled = false;
                 saveBtn.innerText = "Simpan ke Firebase (Realtime)";
-                // Menampilkan pop-up notifikasi sukses yang bersih
                 document.getElementById('success-modal').classList.remove('hidden');
                 closeAdminModal();
             }).catch((err) => {
