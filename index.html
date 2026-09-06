@@ -290,7 +290,7 @@
 
         <!-- ================= MODAL NOTIFIKASI SUKSES SIMPAN ================= -->
         <div id="success-modal" class="hidden absolute inset-0 bg-stone-950/80 z-50 p-6 flex flex-col justify-center items-center">
-            <div class="w-4/5 max-w-xs bg-stone-800 p-6 rounded-2xl border border-emerald-600/50 shadow-2xl text-center space-y-4 animate-bounce-short">
+            <div class="w-4/5 max-w-xs bg-stone-800 p-6 rounded-2xl border border-emerald-600/50 shadow-2xl text-center space-y-4">
                 <div class="w-16 h-16 mx-auto bg-emerald-600/20 text-emerald-400 rounded-full flex items-center justify-center text-3xl border border-emerald-500/40">
                     <i class="fa-solid fa-check"></i>
                 </div>
@@ -697,7 +697,8 @@
                 return;
             }
 
-            let lines = rawText.split('\n');
+            // Filter baris kosong agar tidak ada baris hantu/ganda
+            let lines = rawText.split('\n').filter(line => line.trim() !== '');
             let addedCount = 0;
             let defaultCat = (restoConfig.categories && restoConfig.categories.length > 0) ? restoConfig.categories[0] : "Makanan";
 
@@ -718,7 +719,8 @@
 
             lines.forEach(line => {
                 if (!line.trim()) return;
-                let cols = line.includes('\t') ? line.split('\t').map(c => c.trim()) : line.split(';').map(c => c.trim());
+                // Filter kolom kosong
+                let cols = line.includes('\t') ? line.split('\t').map(c => c.trim()).filter(c => c !== '') : line.split(';').map(c => c.trim()).filter(c => c !== '');
                 
                 let name = "";
                 let price = 0;
