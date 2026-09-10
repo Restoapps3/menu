@@ -36,7 +36,7 @@
                 <button onclick="openMenuModal()" class="flex items-center justify-between w-full p-4 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold rounded-2xl shadow-lg transition-all transform active:scale-95">
                     <span class="flex items-center gap-3">
                         <i class="fa-solid fa-book-open text-xl"></i>
-                        Lihat Menu
+                        Lihat Menu & Alergi
                     </span>
                     <i class="fa-solid fa-chevron-right text-sm"></i>
                 </button>
@@ -44,7 +44,7 @@
                 <a id="btn-review" href="#" target="_blank" class="flex items-center justify-between w-full p-4 bg-stone-700 hover:bg-stone-600 text-white font-semibold rounded-2xl shadow-md border border-stone-600 transition-all transform active:scale-95">
                     <span class="flex items-center gap-3 text-amber-400">
                         <i class="fa-solid fa-star text-xl"></i>
-                        Beri Ulasan
+                        Beri Ulasan Google Maps (Bintang 5)
                     </span>
                     <i class="fa-solid fa-chevron-right text-sm text-stone-400"></i>
                 </a>
@@ -331,7 +331,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Mendeteksi parameter id, table, atau meja dari URL secara dinamis (fallback ke 'default_resto' jika kosong)
         const urlParams = new URLSearchParams(window.location.search);
         const restoId = urlParams.get('id') || urlParams.get('table') || urlParams.get('meja') || 'default_resto';
         
@@ -340,7 +339,6 @@
         let cart = {};
         let restoConfig = {};
 
-        // Variabel untuk menghitung klik pada nama restoran (5x)
         let restoNameClickCount = 0;
         let restoNameClickTimer = null;
 
@@ -669,24 +667,26 @@
             if(!container) return;
             container.innerHTML = '';
             const keyword = document.getElementById('admin-search-input').value.toLowerCase();
+            
             (restoConfig.products || []).forEach((p, i) => {
                 if(keyword && !p.name.toLowerCase().includes(keyword)) return;
                 let opts = '';
                 (restoConfig.categories || []).forEach(c => { opts += `<option value="${c}" ${p.category === c ? 'selected' : ''}>${c}</option>`; });
+                
                 container.innerHTML += `
-                    <div class="flex flex-col gap-2 bg-stone-800 p-2.5 rounded border border-stone-700" id="prod-row-${i}">
+                    <div class="flex flex-col gap-2 bg-stone-800 p-2.5 rounded border border-stone-700 product-row-item" data-original-index="${i}">
                         <div class="flex gap-2 items-center">
                             <span class="text-[10px] bg-stone-700 px-1.5 py-0.5 rounded text-amber-400 font-mono">#${i+1}</span>
-                            <input type="text" value="${p.name || ''}" placeholder="Nama Menu" class="p-1.5 bg-stone-700 rounded flex-1 text-xs text-white" id="adm-prod-name-${i}">
-                            <input type="number" min="0" value="${p.price !== undefined ? p.price : 0}" placeholder="Harga" class="p-1.5 bg-stone-700 rounded w-24 text-xs text-white" id="adm-prod-price-${i}">
+                            <input type="text" value="${p.name || ''}" placeholder="Nama Menu" class="p-1.5 bg-stone-700 rounded flex-1 text-xs text-white adm-prod-name">
+                            <input type="number" min="0" value="${p.price !== undefined ? p.price : 0}" placeholder="Harga" class="p-1.5 bg-stone-700 rounded w-24 text-xs text-white adm-prod-price">
                             <button type="button" onclick="removeProduct(${i})" class="text-red-400 p-1" title="Hapus"><i class="fa-solid fa-trash"></i></button>
                         </div>
                         <div class="flex gap-2">
-                            <input type="text" value="${p.img || ''}" placeholder="URL Gambar" class="p-1.5 bg-stone-700 rounded flex-1 text-xs text-white" id="adm-prod-img-${i}">
-                            <select id="adm-prod-cat-${i}" class="p-1.5 bg-stone-700 rounded text-xs text-white w-28">${opts}</select>
+                            <input type="text" value="${p.img || ''}" placeholder="URL Gambar" class="p-1.5 bg-stone-700 rounded flex-1 text-xs text-white adm-prod-img">
+                            <select class="p-1.5 bg-stone-700 rounded text-xs text-white w-28 adm-prod-cat">${opts}</select>
                         </div>
                         <div class="flex gap-2 items-center">
-                            <input type="text" value="${p.desc || ''}" placeholder="Deskripsi Singkat" class="p-1.5 bg-stone-700 rounded flex-1 text-xs text-white" id="adm-prod-desc-${i}">
+                            <input type="text" value="${p.desc || ''}" placeholder="Deskripsi Singkat" class="p-1.5 bg-stone-700 rounded flex-1 text-xs text-white adm-prod-desc">
                             <button type="button" onclick="updateSingleProduct(${i})" class="bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold px-2.5 py-1 rounded text-[11px] whitespace-nowrap" title="Simpan Perubahan Item Ini">
                                 <i class="fa-solid fa-pen-to-square mr-1"></i> Edit / Simpan
                             </button>
@@ -699,7 +699,6 @@
         window.addProductInput = () => { syncDOMToConfig(); restoConfig.products.push({name:"", price:0, img:"", desc:"", category:restoConfig.categories[0] || "Makanan"}); renderAdminProducts(); }
         window.removeProduct = (i) => { syncDOMToConfig(); restoConfig.products.splice(i,1); renderAdminProducts(); }
 
-        // Fungsi baru untuk memperbarui/mengedit satu item menu langsung pada baris inputnya tanpa menghapus form lain
         window.updateSingleProduct = function(i) {
             syncDOMToConfig();
             renderAdminProducts();
@@ -736,7 +735,6 @@
             lines.forEach(line => {
                 if (!line.trim()) return;
 
-                // Deteksi pemisah kolom yang lebih presisi (Tab prioritas utama dari Excel/Spreadsheet, lalu titik koma atau koma)
                 let separator = line.includes('\t') ? '\t' : (line.includes(';') ? ';' : (line.includes(',') ? ',' : null));
                 let cols = separator ? line.split(separator).map(c => c.trim()).filter(c => c !== '') : [line.trim()];
 
@@ -746,7 +744,6 @@
                 let img = "";
                 let desc = "";
 
-                // Jika disalin terstruktur menggunakan kolom (misal dari Excel/Spreadsheet)
                 if (cols.length > 1) {
                     cols.forEach(col => {
                         let lowerCol = col.toLowerCase();
@@ -777,7 +774,6 @@
                         }
                     });
                 } else {
-                    // Jika teks baris tunggal bebas (misal: "Nasi Goreng 15000")
                     let parts = line.split(/\s+/);
                     let nameParts = [];
                     parts.forEach(p => {
@@ -793,12 +789,10 @@
                     }
                 }
 
-                // Fallback pengaman jika nama masih kosong
                 if (!name && cols.length > 0) {
                     name = cols[0];
                 }
 
-                // Otomatis pasang gambar cerdas jika URL gambar tidak diisi/tidak valid
                 if (!img || !img.startsWith('http')) {
                     img = getSmartImage(name);
                 }
@@ -897,29 +891,30 @@
             });
             if(newCats.length > 0) restoConfig.categories = newCats;
 
-            let newProducts = [];
-            let prodRows = document.querySelectorAll('#admin-product-inputs > div');
-            prodRows.forEach((_, i) => {
-                let name = document.getElementById(`adm-prod-name-${i}`);
-                let price = document.getElementById(`adm-prod-price-${i}`);
-                let img = document.getElementById(`adm-prod-img-${i}`);
-                let desc = document.getElementById(`adm-prod-desc-${i}`);
-                let cat = document.getElementById(`adm-prod-cat-${i}`);
-                
-                if (name) {
-                    let parsedPrice = price ? Number(price.value) : 0;
-                    if(isNaN(parsedPrice) || parsedPrice < 0) parsedPrice = 0;
+            let prodRows = document.querySelectorAll('.product-row-item');
+            prodRows.forEach((row) => {
+                let originalIdx = row.getAttribute('data-original-index');
+                if (originalIdx !== null && restoConfig.products[originalIdx]) {
+                    let nameInput = row.querySelector('.adm-prod-name');
+                    let priceInput = row.querySelector('.adm-prod-price');
+                    let imgInput = row.querySelector('.adm-prod-img');
+                    let descInput = row.querySelector('.adm-prod-desc');
+                    let catSelect = row.querySelector('.adm-prod-cat');
 
-                    newProducts.push({
-                        name: name.value.trim(),
-                        price: parsedPrice,
-                        img: img ? img.value.trim() : "",
-                        desc: desc ? desc.value.trim() : "",
-                        category: cat ? cat.value : (restoConfig.categories[0] || "Makanan")
-                    });
+                    if (nameInput) {
+                        let parsedPrice = priceInput ? Number(priceInput.value) : 0;
+                        if(isNaN(parsedPrice) || parsedPrice < 0) parsedPrice = 0;
+
+                        restoConfig.products[originalIdx] = {
+                            name: nameInput.value.trim(),
+                            price: parsedPrice,
+                            img: imgInput ? imgInput.value.trim() : "",
+                            desc: descInput ? descInput.value.trim() : "",
+                            category: catSelect ? catSelect.value : (restoConfig.categories[0] || "Makanan")
+                        };
+                    }
                 }
             });
-            restoConfig.products = newProducts;
         }
 
         window.saveAdminDataToFirebase = function() {
