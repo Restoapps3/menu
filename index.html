@@ -697,7 +697,6 @@
                 return;
             }
 
-            // Memisahkan baris dan membuang baris kosong
             let lines = rawText.split('\n').filter(line => line.trim() !== '');
             let addedCount = 0;
             let defaultCat = (restoConfig.categories && restoConfig.categories.length > 0) ? restoConfig.categories[0] : "Makanan";
@@ -720,9 +719,9 @@
             lines.forEach(line => {
                 if (!line.trim()) return;
 
-                // Mendeteksi pemisah: Tab (Excel) atau Titik Koma / Koma jika terstruktur rapi
-                let cols = line.includes('\t') ? line.split('\t') : (line.includes(';') ? line.split(';') : line.split(','));
-                cols = cols.map(c => c.trim()).filter(c => c !== '');
+                // Deteksi pemisah kolom yang lebih presisi (Tab prioritas utama dari Excel/Spreadsheet, lalu titik koma atau koma)
+                let separator = line.includes('\t') ? '\t' : (line.includes(';') ? ';' : (line.includes(',') ? ',' : null));
+                let cols = separator ? line.split(separator).map(c => c.trim()).filter(c => c !== '') : [line.trim()];
 
                 let name = "";
                 let price = 0;
@@ -730,41 +729,26 @@
                 let img = "";
                 let desc = "";
 
-                // Jika hanya ada 1 atau 2 kolom (misal format teks biasa: "Nasi Goreng 15000")
-                if (cols.length <= 2 && line.includes(' ')) {
-                    let parts = line.split(/\s+/);
-                    let potentialNameParts = [];
-                    parts.forEach(p => {
-                        let cleanNum = p.replace(/[^\d]/g, '');
-                        if (/^\d+$/.test(cleanNum) && Number(cleanNum) > 999 && price === 0) {
-                            price = Number(cleanNum);
-                        } else {
-                            potentialNameParts.push(p);
-                        }
-                    });
-                    if (potentialNameParts.length > 0) {
-                        name = potentialNameParts.join(' ');
-                    }
-                } else {
-                    // Analisis multi-kolom secara spesifik
+                // Jika disalin terstruktur menggunakan kolom (misal dari Excel/Spreadsheet)
+                if (cols.length > 1) {
                     cols.forEach(col => {
-                        let lower = col.toLowerCase();
-                        let cleanNumStr = col.replace(/[^\d]/g, '');
-                        let numVal = Number(cleanNumStr);
+                        let lowerCol = col.toLowerCase();
+                        let cleanDigits = col.replace(/[^\d]/g, '');
+                        let numVal = Number(cleanDigits);
 
-                        if (lower.startsWith('http://') || lower.startsWith('https://') || lower.includes('images.unsplash.com') || lower.includes('imgur.com')) {
+                        if (lowerCol.startsWith('http://') || lowerCol.startsWith('https://') || lowerCol.includes('unsplash.com') || lowerCol.includes('imgur.com')) {
                             img = col;
                         } 
-                        else if (price === 0 && /^\d+$/.test(cleanNumStr) && numVal > 99) {
+                        else if (price === 0 && /^\d+$/.test(cleanDigits) && numVal > 0) {
                             price = numVal;
                         } 
                         else if (
-                            (restoConfig.categories && restoConfig.categories.some(c => c.toLowerCase() === lower)) || 
-                            ['makanan', 'minuman', 'dessert', 'snack', 'camilan', 'paket', 'coffee', 'beverage', 'food'].includes(lower)
+                            (restoConfig.categories && restoConfig.categories.some(c => c.toLowerCase() === lowerCol)) || 
+                            ['makanan', 'minuman', 'dessert', 'snack', 'camilan', 'paket', 'coffee', 'beverage', 'food'].includes(lowerCol)
                         ) {
                             category = col;
                         } 
-                        else if (!name && !/^\d+$/.test(cleanNumStr)) {
+                        else if (!name) {
                             name = col;
                         } 
                         else if (price === 0 && !isNaN(numVal) && numVal > 0) {
@@ -775,12 +759,29 @@
                             else desc += " " + col;
                         }
                     });
+                } else {
+                    // Jika teks baris tunggal bebas (misal: "Nasi Goreng 15000")
+                    let parts = line.split(/\s+/);
+                    let nameParts = [];
+                    parts.forEach(p => {
+                        let cleanNum = p.replace(/[^\d]/g, '');
+                        if (price === 0 && /^\d+$/.test(cleanNum) && Number(cleanNum) > 99) {
+                            price = Number(cleanNum);
+                        } else {
+                            nameParts.push(p);
+                        }
+                    });
+                    if (nameParts.length > 0) {
+                        name = nameParts.join(' ');
+                    }
                 }
 
+                // Fallback pengaman jika nama masih kosong
                 if (!name && cols.length > 0) {
                     name = cols[0];
                 }
 
+                // Otomatis pasang gambar cerdas jika URL gambar tidak diisi/tidak valid
                 if (!img || !img.startsWith('http')) {
                     img = getSmartImage(name);
                 }
@@ -789,7 +790,7 @@
                     let matchedCat = restoConfig.categories.find(c => c.toLowerCase() === category.toLowerCase());
                     let finalCategory = matchedCat ? matchedCat : category;
                     
-                    if (!matchedCat && category) {
+                    if (!matchedCat && category && category !== defaultCat) {
                         restoConfig.categories.push(category);
                         finalCategory = category;
                     }
@@ -809,7 +810,7 @@
                 document.getElementById('bulk-paste-input').value = '';
                 renderAdminCategories();
                 renderAdminProducts();
-                alert(`Berhasil mengimpor ${addedCount} menu dengan akurat! Jangan lupa klik tombol "Simpan ke Firebase" di bawah untuk menyimpan permanen.`);
+                alert(`Berhasil mengimpor ${addedCount} menu dengan akurat! Jangan lupa klik tombol "Simpan Data" di bawah untuk menyimpan permanen.`);
             } else {
                 alert("Format data tidak dapat dibaca. Pastikan format baris teks valid (Contoh: Nama Menu [Tab] Harga).");
             }
@@ -922,15 +923,16 @@
 
             set(restoRef, restoConfig).then(() => {
                 saveBtn.disabled = false;
-                saveBtn.innerText = "Simpan ke Firebase (Realtime)";
+                saveBtn.innerText = "Simpan Data";
                 document.getElementById('success-modal').classList.remove('hidden');
                 closeAdminModal();
             }).catch((err) => {
                 alert("Gagal menyimpan: " + err.message);
                 saveBtn.disabled = false;
-                saveBtn.innerText = "Simpan ke Firebase (Realtime)";
+                saveBtn.innerText = "Simpan Data";
             });
         }
     </script>
 </body>
 </html>
+```[cite: 1]
